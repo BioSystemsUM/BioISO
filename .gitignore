@@ -1,0 +1,4 @@
+.idea
+bioiso/__pycache__/
+bioiso/wrappers/__pycache__/
+bioiso/tests/results/
