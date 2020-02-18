@@ -90,7 +90,7 @@ def read_and_processing_models(solver, path = None):
         path = os.getcwd() + '/models/'
     else:
         if not path.endswith('/'):
-            path = path+'/'
+            path = path + '/'
 
     for model_name in os.listdir(path):
 
@@ -220,51 +220,45 @@ if __name__ == "__main__":
     level = 2
     fast = False
 
-    # reactions = {
-    #              'iDS372': 'Biomass_assembly_C3_cytop',
-    #              'iJO1366' : 'Ec_biomass_iJO1366_core_53p95M',
-    #              'iOD907' : 'Biomass_cyto',
-    #              'iTO977' : 'CBIOMASS',
-    #              'iBsu1103' : 'bio00006'
-    #              }
-    #
-    # objectives = {
-    #               'iDS372': 'maximize',
-    #               'iJO1366' : 'maximize',
-    #               'iOD907' : 'maximize',
-    #               'iTO977' : 'maximize',
-    #               'iBsu1103' : 'maximize'
-    #               }
-
-    # reactions_compounds = {
-    #              'iDS372': 'EX_C00186_extr',
-    #              'iJO1366' : 'EX_ac_LPAREN_e_RPAREN_',
-    #              'iOD907' : 'EX_C00011_extr_b',
-    #              'iTO977' : 'EX_m11',
-    #              'iBsu1103' : 'rxn00225'
-    #              }
-
-    # objectives_compounds = {
-    #               'iDS372': 'maximize',
-    #               'iJO1366' : 'maximize',
-    #               'iOD907' : 'maximize',
-    #               'iTO977' : 'maximize',
-    #               'iBsu1103' : 'maximize'
-    #               }
-
     reactions = {
-                 'iJO1366' : 'Ec_biomass_iJO1366_core_53p95M'
+                 'iDS372': 'Biomass_assembly_C3_cytop',
+                 'iJO1366' : 'Ec_biomass_iJO1366_core_53p95M',
+                 'iOD907' : 'Biomass_cyto',
+                 'iTO977' : 'CBIOMASS',
+                 'iBsu1103' : 'bio00006'
                  }
 
     objectives = {
                   'iDS372': 'maximize',
+                  'iJO1366' : 'maximize',
+                  'iOD907' : 'maximize',
+                  'iTO977' : 'maximize',
+                  'iBsu1103' : 'maximize'
                   }
 
+    reactions_compounds = {
+                 'iDS372': 'EX_C00186_extr',
+                 'iJO1366' : 'EX_ac_LPAREN_e_RPAREN_',
+                 'iOD907' : 'EX_C00011_extr_b',
+                 'iTO977' : 'EX_m11',
+                 'iBsu1103' : 'rxn00225'
+                 }
+
+    objectives_compounds = {
+                  'iDS372': 'maximize',
+                  'iJO1366' : 'maximize',
+                  'iOD907' : 'maximize',
+                  'iTO977' : 'maximize',
+                  'iBsu1103' : 'minimize'
+                  }
+
+
     models = read_and_processing_models(solver)
-
     new_models = apply_ko(models, reactions)
-
     results = runBioiso_and_write_results(new_models, reactions, objectives, level, fast, 'BioISOResults')
-
     counts = searchspacecounts(results, 'BioISOCounts')
+
+    new_models_compounds = apply_ko(models, reactions_compounds)
+    results_compounds = runBioiso_and_write_results(new_models_compounds, reactions_compounds, objectives_compounds, level, fast, 'BioISOResults')
+    counts_compounds = searchspacecounts(results_compounds, 'BioISOCounts')
 
