@@ -1,5 +1,5 @@
 import os
-from .validation import model_processing
+from .validation import biomass_model_processing, compound_model_processing
 from bioiso.core.bioiso import Bioiso
 from bioiso.wrappers.cobraWrapper import load, set_solver
 
@@ -15,7 +15,7 @@ model = load(model_path)
 
 set_solver(model, solver)
 
-growth, _, m = model_processing[model_name](model)
+growth, m = biomass_model_processing[model_name](model)
 
 presults = os.getcwd() + '/results/'
 

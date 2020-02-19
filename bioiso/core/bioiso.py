@@ -6,7 +6,7 @@ from bioiso.utils.bioisoUtils import Node, NodeCache, evaluate_side, timeout
 
 class Bioiso:
 
-    def __init__(self, reaction_id, model, objective_direction, fast = False, timeout=600):
+    def __init__(self, reaction_id, model, objective_direction, fast = False, timeout=900):
 
         self.reaction_id = reaction_id
         self.model = model

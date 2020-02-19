@@ -1,5 +1,5 @@
 from cobra import io, Reaction
-from cobra.flux_analysis import single_reaction_deletion
+from cobra.flux_analysis import single_reaction_deletion, double_reaction_deletion
 from bioiso.utils.bioisoUtils import NodeCache
 import numpy as np
 import random
@@ -278,7 +278,9 @@ def simulate_reaction(model, reaction, isMaximize, tol=1E-06):
 
             set_objective_function(m, reaction.id)
 
-            return m.slim_optimize() > 0.0
+            solution = m.slim_optimize()
+
+            return evalSlimSol(solution, tol)
 
         else:
 
@@ -286,7 +288,9 @@ def simulate_reaction(model, reaction, isMaximize, tol=1E-06):
 
             set_objective_function(m, reaction.id)
 
-            return abs(m.optimize(objective_sense='minimize').objective_value) > tol
+            solution = m.optimize(objective_sense='minimize')
+
+            return evalSol(solution, tol)
 
 @NodeCache
 def simulate_reactants(model, node, products, tol=1E-06):
@@ -307,7 +311,7 @@ def simulate_reactants(model, node, products, tol=1E-06):
         # using fba, which is much much much faster than pFBA
         solution = m.slim_optimize()
 
-    return solution > tol
+    return evalSlimSol(solution, tol)
 
 @NodeCache
 def simulate_products(model, node, reactants, tol=1E-06):
@@ -326,39 +330,56 @@ def simulate_products(model, node, reactants, tol=1E-06):
         # solution = flux_analysis.pfba(m, reactions=[drain_name])
 
         # using fba, which is much much much faster than pFBA
-        solution = m.optimize(objective_sense='minimize').objective_value
+        solution = m.optimize(objective_sense='minimize')
 
-    return solution > tol
+    return evalSol(solution, tol)
 
-def singleReactionKO(model, objective_id, exchange_prefix = None, tol = 1E-06):
+def evalSol(solution, tol):
 
-    set_objective_function(model, objective_id)
+    if np.isnan(solution.objective_value): return False
 
-    initial_sol = abs(model.optimize().objective_value)
+    if abs(solution.objective_value) < tol: return False
 
-    if initial_sol < tol:
+    if solution.status != 'optimal': return False
+
+    return True
+
+def evalSlimSol(solution, tol):
+
+    if np.isnan(solution): return False
+
+    if abs(solution) < tol: return False
+
+    return True
+
+def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol = 1E-06):
+
+    set_objective_function(model, reaction_id)
+
+    initial_sol = model.optimize(objective_sense=objective)
+
+    if not evalSol(initial_sol, tol):
 
         raise Exception("Objective value is zero. Model must have a valid solution objective value")
 
     # exchange reactions to remove
-
-    exchange_reactions_remove = []
-
     if exchange_prefix is not None:
 
-        exchange_reactions_remove = [i.id for i in model.reactions if exchange_prefix in i.name]
+        reactions_remove = [i.id for i in model.reactions if exchange_prefix in i.name]
 
     else:
 
-        exchange_reactions_remove = [i.id for i in model.reactions if 'Drainfor' in i.name or 'EX_' in i.id]
+        reactions_remove = [i.id for i in model.reactions if 'Drainfor' in i.name or 'EX_' in i.id]
 
     for i in model.exchanges:
 
-        if i.id not in exchange_reactions_remove:
-            exchange_reactions_remove.append(i.id)
+        if i.id not in reactions_remove:
+            reactions_remove.append(i.id)
+
+    reactions_remove.append(reaction_id)
 
     with model as m:
-        reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in exchange_reactions_remove]
+        reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
 
     # multiprocessing is somehow taking more than just using a single core
     solution = single_reaction_deletion(model, reaction_list=reac_list, processes=1)
@@ -368,16 +389,46 @@ def singleReactionKO(model, objective_id, exchange_prefix = None, tol = 1E-06):
     solution.loc[:, 'growth'][np.isnan(solution.loc[:, 'growth'])] = float(0)
     solution.loc[:, 'growth'] = solution.loc[:, 'growth'].apply(lambda x: float(abs(x)))
 
-    sr_letal = solution[solution.loc[:, 'growth'] <= tol]
+    sr_lethal = solution[solution.loc[:, 'growth'] <= tol]
 
-    reactions_to_select = list(sr_letal.index)
+    if sr_lethal.shape[0] == 0:
+
+        print(reaction_id, " failed", " since there is no KO available")
+        print(reaction_id, " trying exchange reactions")
+
+        reactions_remove = []
+
+        reactions_remove.append(reaction_id)
+
+        with model as m:
+            reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
+
+        solution = single_reaction_deletion(model, reaction_list=reac_list, processes=1)
+
+        solution.index = map(lambda x: x.__str__().replace('frozenset({\'', '').replace('\'})', ''), solution.index)
+
+        solution.loc[:, 'growth'][np.isnan(solution.loc[:, 'growth'])] = float(0)
+        solution.loc[:, 'growth'] = solution.loc[:, 'growth'].apply(lambda x: float(abs(x)))
+
+        sr_lethal = solution[solution.loc[:, 'growth'] <= tol]
+
+    if sr_lethal.shape[0] == 0:
+
+        print(reaction_id, " failed", " since there is no KO available")
+
+        return model
+
+    reactions_to_select = list(sr_lethal.index)
     selected = random.choice(reactions_to_select)
 
     model.reactions.get_by_id(selected).bounds = (0.0, 0.0)
 
-    last_sol = model.optimize().objective_value
+    set_objective_function(model, reaction_id)
 
-    if last_sol > tol:
+    last_sol = model.optimize(objective_sense=objective)
+
+    if evalSol(last_sol, tol):
+        print(reaction_id, " failed", " since last solution is ", last_sol)
         raise Exception("The KO is not lethal, so cobrapy single reaction deletion solution is somehow incorrect")
 
     return model

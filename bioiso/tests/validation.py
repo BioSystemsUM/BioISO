@@ -13,11 +13,7 @@ def iDS372(model):
 
     growth = model.optimize().objective_value
 
-    set_objective_function(model, 'EX_C00186_extr')
-
-    lactate_rate = model.optimize().objective_value
-
-    return ('Biomass_assembly_C3_cytop', growth), ('EX_C00186_extr', lactate_rate), model
+    return ('Biomass_assembly_C3_cytop', growth), model
 
 def iJO1366(model):
 
@@ -27,11 +23,7 @@ def iJO1366(model):
 
     growth = model.optimize().objective_value
 
-    set_objective_function(model, 'EX_ac_LPAREN_e_RPAREN_')
-
-    acetate_rate = model.optimize().objective_value
-
-    return ('Ec_biomass_iJO1366_core_53p95M', growth), ('EX_ac_LPAREN_e_RPAREN_', acetate_rate), model
+    return ('Ec_biomass_iJO1366_core_53p95M', growth), model
 
 def iBsu1103(model):
 
@@ -42,55 +34,106 @@ def iBsu1103(model):
 
     growth = model.optimize().objective_value
 
-    set_objective_function(model, 'rxn00225')
-
-    acetate_rate = model.optimize().objective_value
-
-    return ('bio00006', growth), ('rxn00225', acetate_rate), model
+    return ('bio00006', growth), model
 
 def iTO977(model):
 
     set_objective_function(model, 'CBIOMASS')
 
-    model.reactions.get_by_id('GLCxtI').bounds = (-10.0, 10.0)
+    get_reaction(model, 'GLCxtI').bounds = (-10.0, 10.0)
 
     growth = model.optimize().objective_value
 
-    set_objective_function(model, 'EX_m11')
-
-    co2_rate = model.optimize().objective_value
-
-    return ('CBIOMASS', growth), ('EX_m11', co2_rate), model
+    return ('CBIOMASS', growth), model
 
 def iOD907(model):
 
     set_objective_function(model, 'Biomass_cyto')
 
-    model.reactions.get_by_id('EX_C00267_extr').lower_bound = -10.0
+    get_reaction(model, 'EX_C00267_extr').lower_bound = -10.0
 
     growth = model.optimize().objective_value
 
-    set_objective_function(model, 'EX_C00011_extr_b')
+    return ('Biomass_cyto', growth), model
+
+def iDS372_compound(model):
+
+    set_objective_function(model, 'EX_C00186_extr')
+
+    get_reaction(model, 'R00199_C3_cytop').bounds = (0.0, 0.0)
+
+    lactate_rate = model.optimize().objective_value
+
+    return ('EX_C00186_extr', lactate_rate), model
+
+def iJO1366_compound(model):
+
+    set_objective_function(model, 'EX_ac_LPAREN_e_RPAREN_')
+
+    get_reaction(model, 'EX_o2_LPAREN_e_RPAREN_').bounds = (0.0, 0.0)
+
+    acetate_rate = model.optimize().objective_value
+
+    return ('EX_ac_LPAREN_e_RPAREN_', acetate_rate), model
+
+def iBsu1103_compound(model):
+
+    set_objective_function(model, 'EX_cpd00029_e')
+
+    for exchange in model.exchanges:
+        exchange.lower_bound = -10.0
+
+    get_reaction(model, 'rxn00152').bounds = (0.0, 0.0)
+    get_reaction(model, 'rxn00173').bounds = (0.0, 0.0)
+
+    acetate_rate = model.optimize().objective_value
+
+    return ('EX_cpd00029_e', acetate_rate), model
+
+def iTO977_compound(model):
+
+    set_objective_function(model, 'CO2xtO')
+
+    get_reaction(model, 'GLCxtI').bounds = (-10.0, 10.0)
 
     co2_rate = model.optimize().objective_value
 
-    return ('Biomass_cyto', growth), ('EX_C00011_extr_b', co2_rate), model
+    return ('CO2xtO', co2_rate), model
 
-model_processing = {'iDS372' : iDS372,
+def iOD907_compound(model):
+
+    set_objective_function(model, 'EX_C00158_extr')
+
+    get_reaction(model, 'EX_C00267_extr').lower_bound = -10.0
+
+    citrate_rate = model.optimize().objective_value
+
+    return ('EX_C00011_extr', citrate_rate), model
+
+biomass_model_processing = {'iDS372' : iDS372,
                     'iJO1366' : iJO1366,
                     'iBsu1103' : iBsu1103,
                     'iTO977' : iTO977,
                     'iOD907' : iOD907}
 
-def read_and_processing_models(solver, path = None):
+compound_model_processing = {'iDS372' : iDS372_compound,
+                    'iJO1366' : iJO1366_compound,
+                    'iBsu1103' : iBsu1103_compound,
+                    'iTO977' : iTO977_compound,
+                    'iOD907' : iOD907_compound}
+
+def read_and_processing_models(path, solver, biomass = True):
+
+    print("Reading and processing models")
 
     models = {}
 
-    if not path:
-        path = os.getcwd() + '/models/'
-    else:
+    if path:
         if not path.endswith('/'):
             path = path + '/'
+
+    else:
+        path = os.getcwd() + '/models/'
 
     for model_name in os.listdir(path):
 
@@ -98,15 +141,25 @@ def read_and_processing_models(solver, path = None):
 
         set_solver(model, solver)
 
-        growth, compound, m = model_processing[model_name[:-4]](model)
-
         p = os.getcwd() + '/results/GrowthCompoundRates' + model_name[:-4] + '.txt'
 
-        with open(p, "w") as file:
-            file.writelines('Growth: ' + str(growth) + '\n')
-            file.writelines('Compound: ' + str(compound))
+        if biomass:
+
+            rate, m = biomass_model_processing[model_name[:-4]](model)
+
+            with open(p, "w") as file:
+                file.writelines('Growth Rate: ' + str(rate) + '\n')
+
+        else:
+
+            rate, m = compound_model_processing[model_name[:-4]](model)
+
+            with open(p, "w") as file:
+                file.writelines('Compound Rate: ' + str(rate) + '\n')
 
         models[model_name[:-4]] = m
+
+    print("Models are ready")
 
     return models
 
@@ -130,13 +183,17 @@ def runBioiso_and_write_results(models, reactions, objectives, level, fast, fnam
 
     results = {}
 
-    for modelKey, reactionKey, objectiveKey in zip(models, reactions, objectives):
+    for modelKey in models:
+
+        print("Starting BioISO with model {}, reaction {} and objective {}".format(models[modelKey],
+                                                                                   reactions[modelKey],
+                                                                                   objectives[modelKey]))
 
         try:
 
             t0 = time.time()
 
-            bio = Bioiso(reactions[reactionKey], models[modelKey], objectives[objectiveKey])
+            bio = Bioiso(reactions[modelKey], models[modelKey], objectives[modelKey])
             bio.run(level, fast)
 
             res = bio.get_tree()
@@ -144,14 +201,17 @@ def runBioiso_and_write_results(models, reactions, objectives, level, fast, fnam
             results[modelKey] = res
 
             path = os.getcwd() + '/results/'
-            bio.write_results(path + fname + modelKey + reactions[reactionKey] + objectives[objectiveKey] + '.json')
+            bio.write_results(path + fname + modelKey + reactions[modelKey] + objectives[modelKey] + '.json')
 
             t1 = time.time()
-            print(t1-t0)
+
+            print("BioISO has finished with running time of {}".format(str(t1-t0)))
+            print("")
+
 
         except Exception as e:
             print("{} model failed".format(models[modelKey]))
-            raise e
+            # raise e
 
     return results
 
@@ -190,7 +250,9 @@ def searchspacecounts(results, fname):
 
     return res
 
-def apply_ko(models, reactions):
+def apply_ko(models, reactions, objectives):
+
+    print("Applying KO")
 
     if not isinstance(models, dict):
         raise TypeError("models arg must be an {}".format(dict.__name__))
@@ -198,29 +260,52 @@ def apply_ko(models, reactions):
     if not isinstance(reactions, dict):
         raise TypeError("reactions arg must be an {}".format(dict.__name__))
 
-    if not isinstance(level, int):
-        raise TypeError("level arg must be an {}".format(int.__name__))
+    if not isinstance(objectives, dict):
+        raise TypeError("objectives arg must be an {}".format(dict.__name__))
 
-    if len(models) != len(reactions):
-        raise ValueError("models and reactions args must have the same lenght. Current "
-              "dimensions models - {} reactions - {}".format(str(len(models)), str(len(reactions))))
+    if len(models) != len(reactions) or len(models) != len(objectives) or len(reactions) != len(objectives):
+        raise ValueError("models, reactions and objectives args must have the same lenght. Current "
+                         "dimensions models - {} reactions - {} objectives - {}".format(str(len(models)),
+                                                                                        str(len(reactions)),
+                                                                                        str(len(objectives))))
 
     new_models = {}
 
-    for modelKey, reactionsKey in zip(models, reactions):
+    for modelKey in models:
 
-        new_models[modelKey] = singleReactionKO(models[modelKey], reactions[reactionsKey])
+        new_models[modelKey] = singleReactionKO(models[modelKey], reactions[modelKey], objectives[modelKey])
+
+    print("New models are ready")
 
     return new_models
 
+def full_pipeline(biomass_reactions, biomass_objectives, biomass_fname, reactions_compounds, objectives_compounds, compounds_fname, solver = 'cplex', level =2 , fast = False):
+
+    results, counts, results_compounds, counts_compounds = None, None, None, None
+
+    if biomass_reactions:
+        models = read_and_processing_models(False, solver)
+        new_models = apply_ko(models, biomass_reactions, biomass_objectives)
+        results = runBioiso_and_write_results(new_models, biomass_reactions, biomass_objectives, level, fast, biomass_fname + 'Results')
+        counts = searchspacecounts(results, biomass_fname + 'Counts')
+
+    if reactions_compounds:
+        models = read_and_processing_models(False, solver, biomass=False)
+        new_models_compounds = apply_ko(models, reactions_compounds, objectives_compounds)
+        results_compounds = runBioiso_and_write_results(new_models_compounds, reactions_compounds, objectives_compounds, level, fast, compounds_fname + 'Results')
+        counts_compounds = searchspacecounts(results_compounds, compounds_fname + 'Counts')
+
+    return results, counts, results_compounds, counts_compounds
 
 if __name__ == "__main__":
 
     solver = 'cplex'
     level = 2
     fast = False
+    biomass_fname = 'BioISOBiomass'
+    compounds_fname = 'BioISOCompounds'
 
-    reactions = {
+    biomass_reactions = {
                  'iDS372': 'Biomass_assembly_C3_cytop',
                  'iJO1366' : 'Ec_biomass_iJO1366_core_53p95M',
                  'iOD907' : 'Biomass_cyto',
@@ -228,7 +313,7 @@ if __name__ == "__main__":
                  'iBsu1103' : 'bio00006'
                  }
 
-    objectives = {
+    biomass_objectives = {
                   'iDS372': 'maximize',
                   'iJO1366' : 'maximize',
                   'iOD907' : 'maximize',
@@ -237,28 +322,22 @@ if __name__ == "__main__":
                   }
 
     reactions_compounds = {
-                 'iDS372': 'EX_C00186_extr',
-                 'iJO1366' : 'EX_ac_LPAREN_e_RPAREN_',
-                 'iOD907' : 'EX_C00011_extr_b',
-                 'iTO977' : 'EX_m11',
-                 'iBsu1103' : 'rxn00225'
+                 'iDS372': 'R00703_C3_cytop',
+                 'iJO1366' : 'ACKr',
+                 'iOD907' : 'R00209_C4_mito',
+                 'iTO977' : 'PDA1_2',
+                 'iBsu1103' : 'rxn00227'
                  }
 
     objectives_compounds = {
                   'iDS372': 'maximize',
-                  'iJO1366' : 'maximize',
+                  'iJO1366' : 'minimize',
                   'iOD907' : 'maximize',
                   'iTO977' : 'maximize',
-                  'iBsu1103' : 'minimize'
+                  'iBsu1103' : 'maximize'
                   }
 
+    full_pipeline(biomass_reactions, biomass_objectives, biomass_fname, reactions_compounds, objectives_compounds, compounds_fname, solver, level, fast)
 
-    models = read_and_processing_models(solver)
-    new_models = apply_ko(models, reactions)
-    results = runBioiso_and_write_results(new_models, reactions, objectives, level, fast, 'BioISOResults')
-    counts = searchspacecounts(results, 'BioISOCounts')
 
-    new_models_compounds = apply_ko(models, reactions_compounds)
-    results_compounds = runBioiso_and_write_results(new_models_compounds, reactions_compounds, objectives_compounds, level, fast, 'BioISOResults')
-    counts_compounds = searchspacecounts(results_compounds, 'BioISOCounts')
 
