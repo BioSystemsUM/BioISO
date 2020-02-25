@@ -60,8 +60,6 @@ def iDS372_compound(model):
 
     set_objective_function(model, 'EX_C00186_extr')
 
-    get_reaction(model, 'R00199_C3_cytop').bounds = (0.0, 0.0)
-
     lactate_rate = model.optimize().objective_value
 
     return ('EX_C00186_extr', lactate_rate), model
@@ -106,9 +104,14 @@ def iOD907_compound(model):
 
     get_reaction(model, 'EX_C00267_extr').lower_bound = -10.0
 
+    get_reaction(model, 'R00355_C3_cyto').bounds = (0.0, 0.0)
+    get_reaction(model, 'R00344_C3_cyto').bounds = (0.0, 0.0)
+    get_reaction(model, 'T01268_C4_mito').bounds = (0.0, 0.0)
+    get_reaction(model, 'R01731_C3_cyto').bounds = (0.0, 0.0)
+
     citrate_rate = model.optimize().objective_value
 
-    return ('EX_C00011_extr', citrate_rate), model
+    return ('EX_C00158_extr', citrate_rate), model
 
 biomass_model_processing = {'iDS372' : iDS372,
                     'iJO1366' : iJO1366,
@@ -147,14 +150,14 @@ def read_and_processing_models(path, solver, biomass = True):
 
             rate, m = biomass_model_processing[model_name[:-4]](model)
 
-            with open(p, "w") as file:
+            with open(p, "a") as file:
                 file.writelines('Growth Rate: ' + str(rate) + '\n')
 
         else:
 
             rate, m = compound_model_processing[model_name[:-4]](model)
 
-            with open(p, "w") as file:
+            with open(p, "a") as file:
                 file.writelines('Compound Rate: ' + str(rate) + '\n')
 
         models[model_name[:-4]] = m
@@ -321,15 +324,15 @@ if __name__ == "__main__":
                   'iBsu1103' : 'maximize'
                   }
 
-    reactions_compounds = {
+    compounds_reactions = {
                  'iDS372': 'R00703_C3_cytop',
                  'iJO1366' : 'ACKr',
-                 'iOD907' : 'R00209_C4_mito',
+                 'iOD907' : 'R00351_C3_cyto',
                  'iTO977' : 'PDA1_2',
                  'iBsu1103' : 'rxn00227'
                  }
 
-    objectives_compounds = {
+    compounds_objectives = {
                   'iDS372': 'maximize',
                   'iJO1366' : 'minimize',
                   'iOD907' : 'maximize',
@@ -337,7 +340,8 @@ if __name__ == "__main__":
                   'iBsu1103' : 'maximize'
                   }
 
-    full_pipeline(biomass_reactions, biomass_objectives, biomass_fname, reactions_compounds, objectives_compounds, compounds_fname, solver, level, fast)
+    full_pipeline(biomass_reactions, biomass_objectives, biomass_fname, compounds_reactions, compounds_objectives,
+                  compounds_fname, solver, level, fast)
 
 
 

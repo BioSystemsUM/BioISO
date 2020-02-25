@@ -4,7 +4,7 @@ from bioiso.core.bioiso import Bioiso
 from bioiso.wrappers.cobraWrapper import load, set_solver
 
 model_name = 'iDS372'
-model_path = os.getcwd() + '/models/' + model_name +'.xml'
+model_path = os.getcwd() + '/models/' + model_name + '.xml'
 reaction_to_eval = 'Biomass_assembly_C3_cytop'
 objective = 'maximize'
 solver = 'cplex'
