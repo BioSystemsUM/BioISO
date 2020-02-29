@@ -367,7 +367,7 @@ class Bioiso:
                                         'role': evaluate_side(self.root.is_reactant),
                                         'reactions': [(child[1], child[2], child[3], child[4]) for child in
                                               self.root.reactions_list],
-                                        'other_reactions': [(None, None, None, None)],
+                                        'other_reactions': [],
                                         'next': {}}}
 
         self.__get_tree__([self.root], self.results, level=0)

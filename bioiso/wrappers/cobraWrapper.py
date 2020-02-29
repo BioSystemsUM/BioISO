@@ -61,9 +61,6 @@ def list_products_names(model, reaction_id):
 def get_reactions(model, metabolite_id):
     return get_metabolite(model, metabolite_id).reactions
 
-def get_biomass_macromolecules(model,biomass_reaction_id):
-    return get_reactants(model, biomass_reaction_id)
-
 def create_unbalenced_reaction(model,metabolite_id, bounds=(-999999, 999999)):
 
     # bounds = (0, 999999)
