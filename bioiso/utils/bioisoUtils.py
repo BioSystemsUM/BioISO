@@ -57,11 +57,11 @@ class NodeCache:
 
     def __init__(self, func):
         self.function = func
-        self.__name__ = func.__name__
+        self._name = func.__name__
 
     def __call__(self, *args, **kwargs):
 
-        composed_id = NodeCache.create_composed_ids(args)
+        composed_id = NodeCache.create_composed_ids(self._name, args)
 
         if composed_id in NodeCache.node_registry:
             return NodeCache.node_registry[composed_id]
@@ -72,9 +72,9 @@ class NodeCache:
             return analysis
 
     @staticmethod
-    def create_composed_ids(args):
+    def create_composed_ids(name, args):
 
-        composed_id = ''
+        composed_id = '' + str(name)
 
         for arg in args:
 
