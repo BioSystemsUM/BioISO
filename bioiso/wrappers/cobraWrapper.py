@@ -1,68 +1,87 @@
 from cobra import io, Reaction
-from cobra.flux_analysis import single_reaction_deletion, double_reaction_deletion
+from cobra.flux_analysis import single_reaction_deletion
 from bioiso.utils.bioisoUtils import NodeCache
 import numpy as np
 import random
+import math
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
 def load(file_name):
+
     try:
+
+        from cobra.io.sbml import LOGGER
+
+        LOGGER.disabled = True
+
         with io.read_sbml_model(file_name) as model:
             return model
 
     except OSError:
-        raise OSError("The directory or file name {} could not be found. Alternatively, this is not a valid SBML model. "
-              "Consult COBRApy I/O for the supported formats".format(str(file_name)))
+        raise OSError(
+            "The directory or file name {} could not be found. Alternatively, this is not a valid SBML model. "
+            "Consult COBRApy I/O for the supported formats".format(str(file_name)))
 
     except:
         print("Unexpected error")
         raise
 
+
 def get_reaction(model, reaction_id):
     return model.reactions.get_by_id(reaction_id)
+
 
 def has_reaction(model, reaction_id):
     return reaction_id in model.reactions
 
+
 def get_metabolite(model, metabolite_id):
     return model.metabolites.get_by_id(metabolite_id)
+
 
 def set_objective_function(model, reaction_id):
     reaction = get_reaction(model, reaction_id)
     model.objective = reaction
 
-def set_solver(model, solver):
 
+def set_solver(model, solver):
     try:
         model.solver = solver
 
     except:
         print('Using COBRApy default solver, namely glpk')
 
+
 def objective(model):
     print(model.objective)
+
 
 def get_reactants(model, reaction_id):
     return get_reaction(model, reaction_id).reactants
 
+
 def get_products(model, reaction_id):
     return get_reaction(model, reaction_id).products
+
 
 def list_reactants_names(model, reaction_id):
     reacs = get_reaction(model, reaction_id).reactants
     return [reac.name for reac in reacs]
 
+
 def list_products_names(model, reaction_id):
     prods = get_reaction(model, reaction_id).products
     return [prod.name for prod in prods]
 
+
 def get_reactions(model, metabolite_id):
     return get_metabolite(model, metabolite_id).reactions
 
-def create_unbalenced_reaction(model,metabolite_id, bounds=(-999999, 999999)):
 
+def create_unbalenced_reaction(model, metabolite_id, bounds=(-999999, 999999)):
     # bounds = (0, 999999)
     # demand - unbalanced network reaction that only allows the accumulation of a compound
 
@@ -83,13 +102,13 @@ def create_unbalenced_reaction(model,metabolite_id, bounds=(-999999, 999999)):
     else:
 
         model.add_reaction(Reaction(reaction_name))
-        get_reaction(model,reaction_name).add_metabolites({get_metabolite(model, metabolite_id): -1})
-        get_reaction(model,reaction_name).bounds = bounds
+        get_reaction(model, reaction_name).add_metabolites({get_metabolite(model, metabolite_id): -1})
+        get_reaction(model, reaction_name).bounds = bounds
 
         return reaction_name
 
-def get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_list):
 
+def get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_list):
     reactions = get_reactions(model, metabolite_id)
 
     reactions_list = []
@@ -129,8 +148,8 @@ def get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_l
 
     return reactions_list, other_reactions_list
 
-def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reactions_list):
 
+def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reactions_list):
     reactions = get_reactions(model, metabolite_id)
 
     n_reactions = len(reactions)
@@ -141,7 +160,7 @@ def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reacti
 
         last_reactions_ids = list(map(lambda x: x[1], previous_reactions_list))
 
-        n_test_set = round(n_reactions*0.1)
+        n_test_set = round(n_reactions * 0.1)
 
         reactions_in_list = list(reactions)
 
@@ -196,9 +215,9 @@ def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reacti
 
         return get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_list)
 
-def isMaximize(model, reaction, metabolite, isReactant):
 
-    if float(reaction.upper_bound) > float(0.0) and float(reaction.lower_bound) < float(0.0):
+def isMaximize(model, reaction, metabolite, isReactant):
+    if float(reaction.upper_bound) > float(0.0) > float(reaction.lower_bound):
 
         if isReactant:
 
@@ -266,8 +285,9 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
                 return None
 
+
 @NodeCache
-def simulate_reaction(model, reaction, isMaximize, tol=1E-06):
+def simulate_reaction(model, reaction, isMaximize, tol=1E-08):
 
     with model as m:
 
@@ -289,14 +309,19 @@ def simulate_reaction(model, reaction, isMaximize, tol=1E-06):
 
             return evalSol(solution, tol)
 
+
 @NodeCache
-def simulate_reactants(model, node, products, tol=1E-06):
+def simulate_reactants(model, node, reactants, products, tol=1E-08):
 
     with model as m:
 
         for product in products:
-
             create_unbalenced_reaction(m, product.id, (-999999, 0))
+
+        for reactant in reactants:
+
+            if reactant.id != node.id:
+                create_unbalenced_reaction(m, reactant.id, (0, 999999))
 
         reaction_id = create_unbalenced_reaction(m, node.id, (0, 999999))
 
@@ -310,14 +335,19 @@ def simulate_reactants(model, node, products, tol=1E-06):
 
     return evalSlimSol(solution, tol)
 
+
 @NodeCache
-def simulate_products(model, node, reactants, tol=1E-06):
+def simulate_products(model, node, reactants, products, tol=1E-08):
 
     with model as m:
 
         for reactant in reactants:
-
             create_unbalenced_reaction(m, reactant.id, (0, 999999))
+
+        for product in products:
+
+            if product.id != node.id:
+                create_unbalenced_reaction(m, product.id, (-999999, 0))
 
         reaction_id = create_unbalenced_reaction(m, node.id, (-999999, 0))
 
@@ -331,7 +361,8 @@ def simulate_products(model, node, reactants, tol=1E-06):
 
     return evalSol(solution, tol)
 
-def evalSol(solution, tol):
+
+def evalSol(solution, tol=1E-08):
 
     if np.isnan(solution.objective_value): return False
 
@@ -341,23 +372,23 @@ def evalSol(solution, tol):
 
     return True
 
-def evalSlimSol(solution, tol):
 
+def evalSlimSol(solution, tol=1E-08):
     if np.isnan(solution): return False
 
     if abs(solution) < tol: return False
 
     return True
 
-def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol = 1E-06):
+
+def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E-08):
 
     set_objective_function(model, reaction_id)
 
     initial_sol = model.optimize(objective_sense=objective)
 
     if not evalSol(initial_sol, tol):
-
-        raise Exception("Objective value is zero. Model must have a valid solution objective value")
+        raise ValueError("Objective value is zero. Model must have a valid solution objective value")
 
     # exchange reactions to remove
     if exchange_prefix is not None:
@@ -379,7 +410,7 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol 
         reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
 
     # multiprocessing is somehow taking more than just using a single core
-    solution = single_reaction_deletion(model, reaction_list=reac_list, processes=1)
+    solution = single_reaction_deletion(model, reaction_list=reac_list)
 
     solution.index = map(lambda x: x.__str__().replace('frozenset({\'', '').replace('\'})', ''), solution.index)
 
@@ -389,7 +420,6 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol 
     sr_lethal = solution[solution.loc[:, 'growth'] <= tol]
 
     if sr_lethal.shape[0] == 0:
-
         print(reaction_id, " failed", " since there is no KO available")
         print(reaction_id, " trying exchange reactions")
 
@@ -400,7 +430,7 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol 
         with model as m:
             reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
 
-        solution = single_reaction_deletion(model, reaction_list=reac_list, processes=1)
+        solution = single_reaction_deletion(model, reaction_list=reac_list)
 
         solution.index = map(lambda x: x.__str__().replace('frozenset({\'', '').replace('\'})', ''), solution.index)
 
@@ -411,21 +441,40 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix = None, tol 
 
     if sr_lethal.shape[0] == 0:
 
-        print(reaction_id, " failed", " since there is no KO available")
+        raise ValueError("{} failed since there is no KO available".format(reaction_id))
 
-        return model
+    # TODO: implement here the sampling. Return dict
 
-    reactions_to_select = list(sr_lethal.index)
-    selected = random.choice(reactions_to_select)
+    all_kos = list(sr_lethal.index)
+    random.shuffle(all_kos)
 
-    model.reactions.get_by_id(selected).bounds = (0.0, 0.0)
+    if len(all_kos) > 5:
+        # n_kos = math.ceil(len(all_kos) * 0.1)
+        n_kos = 5
+    else:
+        n_kos = len(all_kos)
 
-    set_objective_function(model, reaction_id)
+    kos = []
 
-    last_sol = model.optimize(objective_sense=objective)
+    for i in range(n_kos):
 
-    if evalSol(last_sol, tol):
-        print(reaction_id, " failed", " since last solution is ", last_sol)
-        raise Exception("The KO is not lethal, so cobrapy single reaction deletion solution is somehow incorrect")
+        ko = all_kos[i]
 
-    return model
+        with model as m:
+
+            m.reactions.get_by_id(ko).bounds = (0.0, 0.0)
+
+            set_objective_function(m, reaction_id)
+
+            last_sol = m.optimize(objective_sense=objective)
+
+            if evalSol(last_sol, tol):
+
+                raise ValueError("{} failed since the KO {} is not lethal, "
+                                 "so cobrapy single reaction deletion solution is "
+                                 "somehow incorrect".format(reaction_id, ko))
+
+            else:
+                kos.append(ko)
+
+    return kos, all_kos

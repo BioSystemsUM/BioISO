@@ -3,9 +3,10 @@ import time
 from threading import Thread
 import functools
 
+
 class Node:
 
-    def __init__(self, metabolite_id = None, name = None, is_reactant = True):
+    def __init__(self, metabolite_id=None, name=None, is_reactant=True):
         self.id = metabolite_id
         self.name = name
         self.reactions_list = []
@@ -51,6 +52,7 @@ class Node:
 
         return has, None
 
+
 class NodeCache:
 
     node_registry = {}
@@ -61,14 +63,14 @@ class NodeCache:
 
     def __call__(self, *args, **kwargs):
 
-        composed_id = NodeCache.create_composed_ids(self._name, args)
+        composed_id = self.create_composed_ids(self._name, args)
 
-        if composed_id in NodeCache.node_registry:
-            return NodeCache.node_registry[composed_id]
+        if composed_id in self.node_registry:
+            return self.node_registry[composed_id]
 
         else:
             analysis = self.function(*args, **kwargs)
-            NodeCache.node_registry[composed_id] = analysis
+            self.node_registry[composed_id] = analysis
             return analysis
 
     @staticmethod
@@ -93,10 +95,10 @@ class NodeCache:
             if isinstance(arg, list):
 
                 for met in arg:
-
-                    composed_id = composed_id +  str(met.id)
+                    composed_id = composed_id + str(met.id)
 
         return composed_id
+
 
 def evaluate_side(bool):
     if bool:
@@ -104,9 +106,9 @@ def evaluate_side(bool):
     else:
         return 'Product'
 
-def searchSpaceSize(results):
 
-    # lenght of all next nodes and reactions but without repeat
+def searchSpaceSize(results):
+    # length of all next nodes and reactions but without repeat
 
     global metabolitesCache, reactionsCache, totalCache
 
@@ -115,9 +117,8 @@ def searchSpaceSize(results):
     metabolitesCache = {}
 
     if len(totalCache) == 0:
-
         return 0, 0, 0, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-           totalCache, reactionsCache, metabolitesCache
+               totalCache, reactionsCache, metabolitesCache
 
     def searchSpaceSizeRecursive(results):
 
@@ -166,7 +167,6 @@ def searchSpaceSize(results):
                 totalCache[reaction[0]] = 1
 
         if len(new_results[key]['next']) != 0:
-
             searchSpaceSizeRecursive(new_results[key]['next'])
 
     totalTotal = 0
@@ -196,9 +196,8 @@ def bioisoSearchSpace(results):
     metabolitesCache = {}
 
     if len(totalCache) == 0:
-
         return 0, 0, 0, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-           totalCache, reactionsCache, metabolitesCache
+               totalCache, reactionsCache, metabolitesCache
 
     def searchSpaceSizeRecursive(results):
 
@@ -277,16 +276,16 @@ def bioisoSearchSpace(results):
 
 def timeit(function):
     def timed(*args, **kwargs):
-
         t0 = time.time()
         result = function(*args, **kwargs)
         t1 = time.time()
 
-        print("### {} took {} ####".format(function.__name__, str(t1-t0)))
+        print("### {} took {} ####".format(function.__name__, str(t1 - t0)))
 
         return result
 
     return timed
+
 
 def timeout(func):
     @functools.wraps(func)

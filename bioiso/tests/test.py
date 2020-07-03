@@ -1,5 +1,5 @@
 import os
-from .validation import biomass_model_processing, compound_model_processing
+from bioiso.tests.validation import biomass_model_processing
 from bioiso.core.bioiso import Bioiso
 from bioiso.wrappers.cobraWrapper import load, set_solver
 
@@ -22,7 +22,7 @@ presults = os.getcwd() + '/results/'
 with open(presults + 'GrowthCompoundRates' + model_name + '.txt', "w") as file:
     file.writelines('Growth: ' + str(growth) + '\n')
 
-#one Bioiso instance for each evaluation
+# one Bioiso instance for each evaluation
 bio = Bioiso(reaction_to_eval, model, objective)
 bio.run(level, fast)
 
