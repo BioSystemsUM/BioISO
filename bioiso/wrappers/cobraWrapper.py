@@ -443,8 +443,6 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E
 
         raise ValueError("{} failed since there is no KO available".format(reaction_id))
 
-    # TODO: implement here the sampling. Return dict
-
     all_kos = list(sr_lethal.index)
     random.shuffle(all_kos)
 
