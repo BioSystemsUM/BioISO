@@ -5,7 +5,7 @@ from bioiso.wrappers.cobraWrapper import get_products, get_reactants, get_reacti
 from bioiso.utils.bioisoUtils import Node, NodeCache, evaluate_side, timeout
 
 
-class Bioiso:
+class BioISO:
 
     def __init__(self, reaction_id, model, objective_direction, fast=False, time_out=900):
 

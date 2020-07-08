@@ -1,12 +1,12 @@
-from bioiso.wrappers.cobraWrapper import load, set_solver, set_objective_function, get_reaction, singleReactionKO
-from bioiso.core.bioiso import Bioiso
-from bioiso.utils.bioisoUtils import searchSpaceSize, bioisoSearchSpace
 import os
-import json
 import time
+import warnings
+
 import pandas as pd
 
-import warnings
+from bioiso import BioISO
+from bioiso.utils.bioisoUtils import searchSpaceSize, bioisoSearchSpace
+from bioiso.wrappers.cobraWrapper import load, set_solver, set_objective_function, get_reaction, singleReactionKO
 
 warnings.filterwarnings("ignore")
 
@@ -253,7 +253,7 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
 
                 m.reactions.get_by_id(ko).bounds = (0.0, 0.0)
 
-                bio = Bioiso(reactions[modelKey], m, objectives[modelKey])
+                bio = BioISO(reactions[modelKey], m, objectives[modelKey])
                 bio.run(level, fast)
 
                 t1 = time.time()

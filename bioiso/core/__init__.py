@@ -1,1 +1,1 @@
-from bioiso.core.bioiso import Bioiso
+from bioiso.core.bioiso import BioISO

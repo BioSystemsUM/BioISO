@@ -1,6 +1,6 @@
 import os
-from bioiso.tests.validation import biomass_model_processing
-from bioiso.core.bioiso import Bioiso
+from validation import biomass_model_processing
+from bioiso import BioISO
 from bioiso.wrappers.cobraWrapper import load, set_solver
 
 model_name = 'iDS372'
@@ -17,13 +17,16 @@ set_solver(model, solver)
 
 growth, m = biomass_model_processing[model_name](model)
 
-presults = os.getcwd() + '/results/'
+presults = os.getcwd() + '/models/results/'
+
+if not os.path.exists(presults):
+    os.mkdir(presults)
 
 with open(presults + 'GrowthCompoundRates' + model_name + '.txt', "w") as file:
     file.writelines('Growth: ' + str(growth) + '\n')
 
 # one Bioiso instance for each evaluation
-bio = Bioiso(reaction_to_eval, model, objective)
+bio = BioISO(reaction_to_eval, model, objective)
 bio.run(level, fast)
 
 # getting the results
