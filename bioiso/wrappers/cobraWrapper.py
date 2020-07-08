@@ -3,19 +3,14 @@ from cobra.flux_analysis import single_reaction_deletion
 from bioiso.utils.bioisoUtils import NodeCache
 import numpy as np
 import random
-import math
-import warnings
 
+import warnings
 warnings.filterwarnings("ignore")
 
 
 def load(file_name):
 
     try:
-
-        from cobra.io.sbml import LOGGER
-
-        LOGGER.disabled = True
 
         with io.read_sbml_model(file_name) as model:
             return model
