@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level2" level="2" version="1">
+  <model id="iJO1366">
+  <listOfCompartments>
+      <compartment id="c" name="Cytoplasm"/>
+      <compartment id="e" name="Extracellular"/>
+      <compartment id="p" name="Periplasm"/>
+  </listOfCompartments>
+    <listOfSpecies>
+          <species id="M_2fe2s_c" stoichiometry="2.6e-005" compartment="c"/>
+          <species id="M_4fe4s_c" stoichiometry="0.00026" compartment="c"/>
+          <species id="M_bmocogdp_c" stoichiometry="0.000122" compartment="c"/>
+          <species id="M_btn_c" stoichiometry="2e-006" compartment="c"/>
+          <species id="M_so4_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_lipopb_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_iscu_DASH_2fe2s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_iscu_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_sufbcd_DASH_2fe2s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_sufbcd_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_iscu_DASH_4fe4s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_sufbcd_DASH_4fe4s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_3fe4s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_bmoco1gdp_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_btn_p" stoichiometry="0.004338" compartment="p"/>
+		  <species id="M_btnso_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_2fe1s_c" stoichiometry="0.004338" compartment="c"/>
+		  <species id="M_so4_p" stoichiometry="0.004338" compartment="p"/>
+    </listOfSpecies>
+  </model>
+</sbml>

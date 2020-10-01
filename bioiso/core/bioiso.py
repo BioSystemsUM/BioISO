@@ -1,6 +1,6 @@
 import json
 from bioiso.wrappers.cobraWrapper import get_products, get_reactants, get_reaction, \
-    list_reactants_names, list_products_names, simulate_reaction, get_reactions_by_role, simulate_reactants, \
+    list_reactants_ids, list_products_ids, simulate_reaction, get_reactions_by_role, simulate_reactants, \
     simulate_products, get_reactions_by_role_fast
 from bioiso.utils.bioisoUtils import Node, NodeCache, evaluate_side, timeout
 
@@ -9,38 +9,45 @@ class BioISO:
 
     def __init__(self, reaction_id, model, objective_direction, fast=False, time_out=900):
 
+        self.levels = 0
+
         self.reaction_id = reaction_id
         self.model = model
         self.root = None
-        self.results = None
+        self.summary = {}
+        self.results = {}
 
+        self.objective_direction = 'maximize'
         self.setObjective(objective_direction)
+
+        self.__verify_reaction_principles()
 
         # controlling cache
         # any time Bioiso starts the registry must be cleaned
-        NodeCache.node_registry = {}
+        self.__id = self.reaction_id + '_' + self.model.id + '_' + self.objective_direction + '_' + str(id(self))
+        self.nodes_cache = NodeCache.new_node_cache(self.__id)
 
         # controlling recursion timeout
-        self.__timeout__ = time_out
+        self.timeout = time_out
 
         # fast version ignores the evaluation of 90% of all reactions (by selecting the first ones) associated with a
         # node if this node has more than 20 reactions
         # the evaluation result of the remaining is unknown
         # also the node is set as leaf, and Bioiso doesn't go any further
-        self.__fast__ = fast
+        self.fast = fast
 
-        self.__principles_verified__ = False
+        self.__principles_verified = False
 
-    def changeTimeout(self, timeout):
-        self.__timeout__ = timeout
+    def changeTimeout(self, timeout_time):
+        self.timeout = timeout_time
 
     def setObjective(self, objective_direction):
 
         if objective_direction == 'maximize':
-            self.__objective_direction__ = 'maximize'
+            self.objective_direction = 'maximize'
 
         elif objective_direction == 'minimize':
-            self.__objective_direction__ = 'minimize'
+            self.objective_direction = 'minimize'
 
         else:
             try:
@@ -51,42 +58,42 @@ class BioISO:
                 print("Please try maximize or minimize as an {} object".format(str(str.__name__)))
                 raise e
 
-    def __verify_reaction_principles__(self):
+    def __verify_reaction_principles(self):
 
         """Verifies the principles for testing the precursors of the input reaction
         Return Boolean (it has all the principles), products
         """
 
         try:
-            if self.__objective_direction__ == 'maximize':
+            if self.objective_direction == 'maximize':
 
                 # get the products of the reaction
                 products = get_products(self.model, self.reaction_id)
 
-                self.__metabolite_is_reactant__ = False
+                self.__metabolite_is_reactant = False
 
                 # creating the root metabolite
-                self.__metabolite_id__ = 'M_fictitious'
-                self.__metabolite_name__ = 'M_fictitious'
+                self.__metabolite_id = 'M_root'
+                self.__metabolite_name = 'M_root'
 
             else:
 
                 # get the products of the reaction
                 reactants = get_reactants(self.model, self.reaction_id)
 
-                self.__metabolite_is_reactant__ = True
+                self.__metabolite_is_reactant = True
 
                 # creating the root metabolite
-                self.__metabolite_id__ = 'M_fictitious'
-                self.__metabolite_name__ = 'M_fictitious'
+                self.__metabolite_id = 'M_root'
+                self.__metabolite_name = 'M_root'
 
-            self.__principles_verified__ = True
+            self.__principles_verified = True
 
         except KeyError as e:
             print("Please select a valid reaction identifier")
             raise e
 
-        except:
+        except BaseException:
             print("Unexpected error")
             raise
 
@@ -99,38 +106,41 @@ class BioISO:
 
         This is controlled in the __verify_reaction_principles__ method"""
 
-        if not self.__principles_verified__:
-            self.__verify_reaction_principles__()
+        if not self.__principles_verified:
+            self.__verify_reaction_principles()
 
         # setting the root
-        self.root = Node(self.__metabolite_id__, self.__metabolite_name__, self.__metabolite_is_reactant__)
+        self.root = Node(identifier=self.__metabolite_id,
+                         name=self.__metabolite_name,
+                         compartment=self.__metabolite_name,
+                         is_reactant=self.__metabolite_is_reactant)
 
         reaction = get_reaction(self.model, self.reaction_id)
 
         # testing first the root reaction
-        if self.__objective_direction__ == 'maximize':
+        if self.objective_direction == 'maximize':
 
-            reaction_flux = simulate_reaction(self.model, reaction, True)
+            reaction_flux = simulate_reaction(self.__id, self.model, reaction, True)
 
             self.root.reactions_list = [(reaction, reaction.id, reaction_flux,
-                                         list_reactants_names(self.model, reaction.id),
-                                         list_products_names(self.model, reaction.id),
+                                         list_reactants_ids(self.model, reaction.id),
+                                         list_products_ids(self.model, reaction.id),
                                          get_reactants(self.model, reaction.id),
                                          get_products(self.model, reaction.id))]
 
         else:
 
-            reaction_flux = simulate_reaction(self.model, reaction, False)
+            reaction_flux = simulate_reaction(self.__id, self.model, reaction, False)
 
             self.root.reactions_list = [(reaction, reaction.id, reaction_flux,
-                                         list_products_names(self.model, reaction.id),
-                                         list_reactants_names(self.model, reaction.id),
+                                         list_products_ids(self.model, reaction.id),
+                                         list_reactants_ids(self.model, reaction.id),
                                          get_products(self.model, reaction.id),
                                          get_reactants(self.model, reaction.id))]
 
-        self.root.flux = reaction_flux
+        self.root.analysis = reaction_flux
 
-    def create_reactions_list(self, node, last_reaction_list, reactant):
+    def set_reactions_list_to_node(self, node, last_reaction_list, reactant):
 
         """Creates the node reactions_list
         It populates the property reactions_list of the object node which is given as input
@@ -145,17 +155,29 @@ class BioISO:
         # selected for reactions_list Otherwise, reactions where the metabolite takes part as reactant should be
         # selected for reactions_list
 
-        if self.__fast__:
-            node.reactions_list, node.other_reactions_list = get_reactions_by_role_fast(self.model, node.id, isReactant=
-            reactant, previous_reactions_list=last_reaction_list)
+        if self.fast:
+
+            reactions = get_reactions_by_role_fast(self.__id,
+                                                   self.model,
+                                                   node.id,
+                                                   isReactant=reactant,
+                                                   previous_reactions_list=last_reaction_list)
+
+            node.reactions_list, node.other_reactions_list = reactions
 
         else:
-            node.reactions_list, node.other_reactions_list = get_reactions_by_role(self.model, node.id, isReactant=
-            reactant, previous_reactions_list=last_reaction_list)
+
+            reactions = get_reactions_by_role(self.__id,
+                                              self.model,
+                                              node.id,
+                                              isReactant=reactant,
+                                              previous_reactions_list=last_reaction_list)
+
+            node.reactions_list, node.other_reactions_list = reactions
 
     def create_next_nodes(self, node, leaf=False):
 
-        if self.__fast__:
+        if self.fast:
 
             if len(node.reactions_list) >= 20:
 
@@ -167,113 +189,141 @@ class BioISO:
                 for reaction in node.reactions_list:
                     # for each reaction let's set the next nodes, namely the reactants of each reaction in
                     # reactions_list
-                    self.__create_next_nodes__(node, reaction, leaf)
+                    self.create_next_nodes_by_reaction(node, reaction, leaf)
 
         else:
 
             # let's iterate the property reactions_list of the node
             for reaction in node.reactions_list:
                 # for each reaction let's set the next nodes, namely the reactants of each reaction in reactions_list
-                self.__create_next_nodes__(node, reaction, leaf)
+                self.create_next_nodes_by_reaction(node, reaction, leaf)
 
-    def __create_next_nodes__(self, node, reaction, leaf):
+    def create_next_nodes_by_reaction(self, node, reaction, leaf):
 
         reactants = reaction[5]
         products = reaction[6]
 
         for reactant in reactants:
 
-            isNode, nextNode = node.has_next(reactant.id)
+            _next_node_hash = (reactant.id, reactant.name, reactant.compartment, 'reactant')
+            # nextNode = node.has_next(reactant.id)
+            nextNode = node.has_next_by_hash(_next_node_hash)
 
-            if not isNode:
-
+            if nextNode is None:
                 # but if a metabolite with an equal name already exists,
                 # it means that the metabolite is on a different compartment
                 # let's create a composed name
 
-                isNode2, _ = node.has_next_by_name(reactant.name)
+                # nextNode = node.has_next_by_name(reactant.name)
+                #
+                # if nextNode is None:
+                #     composed_name = reactant.name
+                #
+                # else:
+                #     composed_name = reactant.name + ' ' + reactant.compartment
 
-                if isNode2:
-                    composed_name = reactant.name + ' ' + reactant.compartment
+                self.build_node(identifier=reactant.id,
+                                name=reactant.name,
+                                compartment=reactant.compartment,
+                                is_reactant=True,
+                                previous_node=node,
+                                leaf=leaf,
+                                reactants=reactants,
+                                products=products)
 
-                else:
-                    composed_name = reactant.name
-
-                # for each reactant in those reactions
-                # create a new node using the id and name
-                next_node = Node(reactant.id, composed_name, True)
-
-                # the previous engine is similar to the next
-                # the previous node of the next nodes is the current node itself
-                next_node.previous = [node]
-
-                # flag to control leafs
-                # by default nodes are not leafs (see create_next_nodes)
-                # populate tree controls the leafs
-                next_node.isLeaf = leaf
-
-                previous_reactions_list = node.reactions_list
-                self.create_reactions_list(next_node, last_reaction_list=previous_reactions_list, reactant=True)
-
-                # append next nodes of the current node, namely the reactants of the reactions where the node takes part into
-                node.next.append(next_node)
-
-                # the products in the reactions_list reaction are the ones that might impair the flux
-                next_node.flux = simulate_reactants(self.model, next_node, reactants, products)
-
-            else:
-
-                if not nextNode.is_reactant:
-                    composed_name = reactant.name + ' ' + reactant.compartment + ' as reactant'
-
-                    next_node = Node(reactant.id, composed_name, True)
-                    next_node.previous = [node]
-                    next_node.isLeaf = leaf
-                    previous_reactions_list = node.reactions_list
-                    self.create_reactions_list(next_node, last_reaction_list=previous_reactions_list, reactant=True)
-                    node.next.append(next_node)
-                    next_node.flux = simulate_reactants(self.model, next_node, reactants, products)
+            # else:
+            #
+            #     if not nextNode.is_reactant:
+            #         composed_name = reactant.name + ' ' + reactant.compartment + ' as reactant'
+            #
+            #         self.build_node(identifier=reactant.id,
+            #                         name=composed_name,
+            #                         compartment=reactant.compartment,
+            #                         is_reactant=True,
+            #                         previous_node=node,
+            #                         leaf=leaf,
+            #                         reactants=reactants,
+            #                         products=products)
 
         # products version
         for product in products:
 
-            isNode, nextNode = node.has_next(product.id)
+            _next_node_hash = (product.id, product.name, product.compartment, 'product')
+            # isNode, nextNode = node.has_next(product.id)
+            nextNode = node.has_next_by_hash(_next_node_hash)
 
-            if not isNode:
+            if nextNode is None:
+                # but if a metabolite with an equal name already exists,
+                # it means that the metabolite is on a different compartment
+                # let's create a composed name
 
-                isNode2, _ = node.has_next_by_name(product.name)
+                # nextNode = node.has_next_by_name(product.name)
+                #
+                # if nextNode is None:
+                #     composed_name = product.name
+                #
+                # else:
+                #     composed_name = product.name + ' ' + product.compartment
 
-                if isNode2:
-                    composed_name = product.name + ' ' + product.compartment
+                self.build_node(identifier=product.id,
+                                name=product.name,
+                                compartment=product.compartment,
+                                is_reactant=False,
+                                previous_node=node,
+                                leaf=leaf,
+                                reactants=reactants,
+                                products=products)
 
-                else:
-                    composed_name = product.name
+            # else:
+            #
+            #     if nextNode.is_reactant:
+            #         composed_name = product.name + ' ' + product.compartment + ' as product'
+            #
+            #         self.build_node(identifier=product.id,
+            #                         name=composed_name,
+            #                         compartment=product.compartment,
+            #                         is_reactant=False,
+            #                         previous_node=node,
+            #                         leaf=leaf,
+            #                         reactants=reactants,
+            #                         products=products)
 
-                next_node = Node(product.id, composed_name, False)
-                next_node.previous = [node]
-                next_node.isLeaf = leaf
+    def build_node(self, identifier, name, compartment, is_reactant, previous_node, leaf, reactants, products):
 
-                previous_reactions_list = node.reactions_list
-                self.create_reactions_list(next_node, last_reaction_list=previous_reactions_list, reactant=False)
-                node.next.append(next_node)
-                next_node.flux = simulate_products(self.model, next_node, reactants, products)
+        # for each reactant in those reactions
+        # create a new node using the id and name
 
-            else:
+        # the previous engine is similar to the next
+        # the previous node of the next nodes is the current node itself
 
-                if nextNode.is_reactant:
-                    composed_name = product.name + ' ' + product.compartment + ' as product'
+        # flag to control leafs
+        # by default nodes are not leafs (see create_next_nodes)
+        # populate tree controls the leafs
 
-                    next_node = Node(product.id, composed_name, False)
-                    next_node.previous = [node]
-                    next_node.isLeaf = leaf
-                    previous_reactions_list = node.reactions_list
-                    self.create_reactions_list(next_node, last_reaction_list=previous_reactions_list, reactant=False)
-                    node.next.append(next_node)
-                    next_node.flux = simulate_products(self.model, next_node, reactants, products)
+        # append next nodes of the current node, namely the reactants of the reactions where the node takes
+        # part into
+        # the products in the reactions_list reaction are the ones that might impair the flux
+
+        next_node = Node(identifier=identifier,
+                         name=name,
+                         compartment=compartment,
+                         is_reactant=is_reactant)
+        next_node.previous = [previous_node]
+        next_node.isLeaf = leaf
+        previous_reactions_list = previous_node.reactions_list
+        self.set_reactions_list_to_node(next_node, last_reaction_list=previous_reactions_list, reactant=is_reactant)
+        previous_node.next.append(next_node)
+
+        if is_reactant:
+            next_node.analysis = simulate_reactants(self.__id, self.model, next_node, reactants, products)
+        else:
+            next_node.analysis = simulate_products(self.__id, self.model, next_node, reactants, products)
+
+        return next_node
 
     def run(self, levels, fast=False):
 
-        self.__fast__ = fast
+        self.fast = fast
 
         if not self.root:
             self.set_root()
@@ -308,9 +358,9 @@ class BioISO:
             # if level is higher than 2
             # a recursive function is called
 
-            self.__populate_tree__([self.root], level=0)
+            self.__populate_tree([self.root], level=0)
 
-    def __populate_tree__(self, nodes, level):
+    def __populate_tree(self, nodes, level):
 
         """Recursive hidden method to populate the tree after the level 1
         After level 1 this function is called with the next nodes of root, namely the first next nodes
@@ -355,46 +405,79 @@ class BioISO:
 
                 nodes = node.get_next()
 
-                self.__populate_tree__(nodes, level + 1)
+                self.__populate_tree(nodes, level + 1)
 
     def get_tree(self):
 
-        self.results = {self.root.name: {'analysis': self.root.flux,
-                                         'role': evaluate_side(self.root.is_reactant),
-                                         'reactions': [(child[1], child[2], child[3], child[4]) for child in
-                                                       self.root.reactions_list],
-                                         'other_reactions': [],
-                                         'next': {}}}
+        if self.results:
+            return self.results
 
-        self.__get_tree__([self.root], self.results, level=0)
+        # create empty tree to fill
+        tree = {}
+
+        # fill in tree starting with roots (those with no parent)
+        self.__get_tree(tree, [self.root])
+
+        self.results = tree
 
         return self.results
 
-    def __get_tree__(self, nodes, dictionary, level):
+    def __get_tree(self, tree, nodes):
 
-        if level == self.levels + 1:
-            return
+        # build a subtree for each child
+        for child in nodes:
 
-        else:
+            _id = child.id
+            _name = child.name
+            _compartment = child.compartment
+            _analysis = child.analysis
+            _role = evaluate_side(child.is_reactant)
+            _reactions_list = [(rxn[1], rxn[2], rxn[3], rxn[4])
+                               for rxn in child.reactions_list]
+            _other_reactions_list = [(rxn[1], rxn[2], rxn[3], rxn[4])
+                                     for rxn in child.other_reactions_list]
 
-            for node in nodes:
-                next_nodes = node.get_next()
+            if _analysis:
 
-                dictionary[node.name]['next'] = {
-                    next_node.name: {'analysis': next_node.flux,
-                                     'role': evaluate_side(next_node.is_reactant),
-                                     'reactions': [(child[1], child[2], child[3], child[4]) for child in
-                                                   next_node.reactions_list],
-                                     'other_reactions': [(child[1], child[2], child[3], child[4]) for child in
-                                                         next_node.other_reactions_list],
-                                     'next': {}} for next_node in next_nodes}
+                if child.has_next_nodes():
 
-                self.__get_tree__(next_nodes, dictionary[node.name]['next'], level + 1)
+                    false_children = [next_child for next_child in child.get_next()
+                                      if not next_child.analysis]
 
-    def write_results(self, results_fname):
+                    if len(false_children) > 0:
+                        _analysis = False
 
-        if not self.results:
-            self.get_tree()
+            if not _analysis:
 
-        with open(results_fname, "w") as jsonfile:
-            json.dump(self.results, jsonfile)
+                true_rxns = [rxn[0] for rxn in _reactions_list if rxn[1]]
+
+                if len(true_rxns) > 0:
+                    _analysis = True
+
+                if child.has_next_nodes() and not _analysis:
+
+                    true_children = [next_child for next_child in child.get_next()
+                                     if next_child.analysis]
+
+                    if len(true_children) == len(child.get_next()):
+                        _analysis = True
+
+            # start new subtree
+            tree[child.get_hash(stringify=True)] = {'identifier': _id,
+                                                    'name': _name,
+                                                    'compartment': _compartment,
+                                                    'analysis': _analysis,
+                                                    'role': _role,
+                                                    'reactions': _reactions_list,
+                                                    'other_reactions': _other_reactions_list,
+                                                    'next': {}}
+
+            # call recursively to build a subtree for current node
+            self.__get_tree(tree[child.get_hash(stringify=True)]['next'], child.get_next())
+
+    def write_results(self, results_f_name):
+
+        results = self.get_tree()
+
+        with open(results_f_name, "w") as jsonfile:
+            json.dump(results, jsonfile)

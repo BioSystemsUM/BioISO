@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level2" level="2" version="1">
+  <model id="model_spneumoniaeR6">
+  <listOfCompartments>
+    <compartment id="C_00001"/>
+    <compartment id="C_00002"/>
+  </listOfCompartments>
+    <listOfSpecies>
+	<species id="M_C06042_cytop" compartment="C_00002"/>
+	<species id="M_C01356_cytop" compartment="C_00002"/>
+	<species id="M_C05980_cytop" compartment="C_00002"/>
+	<species id="M_C06040_cytop" compartment="C_00002"/>
+	<species id="M_C04046_cytop" compartment="C_00002"/>
+	<species id="M_C00344_cytop" compartment="C_00002"/>
+	<species id="M_C00116_cytop" compartment="C_00002"/>
+	<species id="M_C00162_cytop" compartment="C_00002"/>
+    </listOfSpecies>
+  </model>
+</sbml>

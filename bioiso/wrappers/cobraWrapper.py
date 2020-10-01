@@ -5,11 +5,11 @@ import numpy as np
 import random
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
 def load(file_name):
-
     try:
 
         with io.read_sbml_model(file_name) as model:
@@ -20,7 +20,7 @@ def load(file_name):
             "The directory or file name {} could not be found. Alternatively, this is not a valid SBML model. "
             "Consult COBRApy I/O for the supported formats".format(str(file_name)))
 
-    except:
+    except BaseException:
         print("Unexpected error")
         raise
 
@@ -46,7 +46,7 @@ def set_solver(model, solver):
     try:
         model.solver = solver
 
-    except:
+    except BaseException:
         print('Using COBRApy default solver, namely glpk')
 
 
@@ -62,14 +62,14 @@ def get_products(model, reaction_id):
     return get_reaction(model, reaction_id).products
 
 
-def list_reactants_names(model, reaction_id):
+def list_reactants_ids(model, reaction_id):
     reacs = get_reaction(model, reaction_id).reactants
-    return [reac.name for reac in reacs]
+    return [reac.id for reac in reacs]
 
 
-def list_products_names(model, reaction_id):
+def list_products_ids(model, reaction_id):
     prods = get_reaction(model, reaction_id).products
-    return [prod.name for prod in prods]
+    return [prod.id for prod in prods]
 
 
 def get_reactions(model, metabolite_id):
@@ -96,14 +96,14 @@ def create_unbalenced_reaction(model, metabolite_id, bounds=(-999999, 999999)):
 
     else:
 
-        model.add_reaction(Reaction(reaction_name))
+        model.add_reactions([Reaction(reaction_name)])
         get_reaction(model, reaction_name).add_metabolites({get_metabolite(model, metabolite_id): -1})
         get_reaction(model, reaction_name).bounds = bounds
 
         return reaction_name
 
 
-def get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_list):
+def get_reactions_by_role(bioiso_id, model, metabolite_id, isReactant, previous_reactions_list):
     reactions = get_reactions(model, metabolite_id)
 
     reactions_list = []
@@ -120,31 +120,31 @@ def get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_l
             if maximize is None:
 
                 other_reactions_list.append((reaction, reaction.id, 'unknown',
-                                             list_reactants_names(model, reaction.id),
-                                             list_products_names(model, reaction.id)))
+                                             list_reactants_ids(model, reaction.id),
+                                             list_products_ids(model, reaction.id)))
 
             elif maximize:
 
                 reactions_list.append((reaction, reaction.id,
-                                       simulate_reaction(model, reaction, maximize),
-                                       list_reactants_names(model, reaction.id),
-                                       list_products_names(model, reaction.id),
+                                       simulate_reaction(bioiso_id, model, reaction, maximize),
+                                       list_reactants_ids(model, reaction.id),
+                                       list_products_ids(model, reaction.id),
                                        get_reactants(model, reaction.id),
                                        get_products(model, reaction.id)))
 
             else:
 
                 reactions_list.append((reaction, reaction.id,
-                                       simulate_reaction(model, reaction, maximize),
-                                       list_products_names(model, reaction.id),
-                                       list_reactants_names(model, reaction.id),
+                                       simulate_reaction(bioiso_id, model, reaction, maximize),
+                                       list_products_ids(model, reaction.id),
+                                       list_reactants_ids(model, reaction.id),
                                        get_products(model, reaction.id),
                                        get_reactants(model, reaction.id)))
 
     return reactions_list, other_reactions_list
 
 
-def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reactions_list):
+def get_reactions_by_role_fast(bioiso_id, model, metabolite_id, isReactant, previous_reactions_list):
     reactions = get_reactions(model, metabolite_id)
 
     n_reactions = len(reactions)
@@ -171,18 +171,18 @@ def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reacti
                 if maximize:
 
                     reactions_list.append((reaction, reaction.id,
-                                           simulate_reaction(model, reaction, maximize),
-                                           list_reactants_names(model, reaction.id),
-                                           list_products_names(model, reaction.id),
+                                           simulate_reaction(bioiso_id, model, reaction, maximize),
+                                           list_reactants_ids(model, reaction.id),
+                                           list_products_ids(model, reaction.id),
                                            get_reactants(model, reaction.id),
                                            get_products(model, reaction.id)))
 
                 else:
 
                     reactions_list.append((reaction, reaction.id,
-                                           simulate_reaction(model, reaction, maximize),
-                                           list_products_names(model, reaction.id),
-                                           list_reactants_names(model, reaction.id),
+                                           simulate_reaction(bioiso_id, model, reaction, maximize),
+                                           list_products_ids(model, reaction.id),
+                                           list_reactants_ids(model, reaction.id),
                                            get_products(model, reaction.id),
                                            get_reactants(model, reaction.id)))
 
@@ -195,20 +195,20 @@ def get_reactions_by_role_fast(model, metabolite_id, isReactant, previous_reacti
                 if maximize:
 
                     reactions_list.append((reaction, reaction.id, 'unknown',
-                                           list_reactants_names(model, reaction.id),
-                                           list_products_names(model, reaction.id)))
+                                           list_reactants_ids(model, reaction.id),
+                                           list_products_ids(model, reaction.id)))
 
                 else:
 
                     reactions_list.append((reaction, reaction.id, 'unknown',
-                                           list_products_names(model, reaction.id),
-                                           list_reactants_names(model, reaction.id)))
+                                           list_products_ids(model, reaction.id),
+                                           list_reactants_ids(model, reaction.id)))
 
         return reactions_list, []
 
     else:
 
-        return get_reactions_by_role(model, metabolite_id, isReactant, previous_reactions_list)
+        return get_reactions_by_role(bioiso_id, model, metabolite_id, isReactant, previous_reactions_list)
 
 
 def isMaximize(model, reaction, metabolite, isReactant):
@@ -220,7 +220,8 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
             for product in products:
 
-                if product.id == metabolite.id: return True
+                if product.id == metabolite.id:
+                    return True
 
             return False
 
@@ -230,7 +231,8 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
             for reactant in reactants:
 
-                if reactant.id == metabolite.id: return True
+                if reactant.id == metabolite.id:
+                    return True
 
             return False
 
@@ -244,7 +246,8 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
                 for product in products:
 
-                    if product.id == metabolite.id: return True
+                    if product.id == metabolite.id:
+                        return True
 
                 return None
 
@@ -254,7 +257,8 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
                 for reactant in reactants:
 
-                    if reactant.id == metabolite.id: return True
+                    if reactant.id == metabolite.id:
+                        return True
 
                 return None
 
@@ -266,7 +270,8 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
                 for reactant in reactants:
 
-                    if reactant.id == metabolite.id: return False
+                    if reactant.id == metabolite.id:
+                        return False
 
                 return None
 
@@ -276,17 +281,17 @@ def isMaximize(model, reaction, metabolite, isReactant):
 
                 for product in products:
 
-                    if product.id == metabolite.id: return False
+                    if product.id == metabolite.id:
+                        return False
 
                 return None
 
 
 @NodeCache
-def simulate_reaction(model, reaction, isMaximize, tol=1E-08):
-
+def simulate_reaction(bioiso_id, model, reaction, is_maximize, tol=1E-08):
     with model as m:
 
-        if isMaximize:
+        if is_maximize:
 
             set_objective_function(m, reaction.id)
 
@@ -306,8 +311,7 @@ def simulate_reaction(model, reaction, isMaximize, tol=1E-08):
 
 
 @NodeCache
-def simulate_reactants(model, node, reactants, products, tol=1E-08):
-
+def simulate_reactants(bioiso_id, model, node, reactants, products, tol=1E-08):
     with model as m:
 
         for product in products:
@@ -332,8 +336,7 @@ def simulate_reactants(model, node, reactants, products, tol=1E-08):
 
 
 @NodeCache
-def simulate_products(model, node, reactants, products, tol=1E-08):
-
+def simulate_products(bioiso_id, model, node, reactants, products, tol=1E-08):
     with model as m:
 
         for reactant in reactants:
@@ -358,29 +361,32 @@ def simulate_products(model, node, reactants, products, tol=1E-08):
 
 
 def evalSol(solution, tol=1E-08):
+    if np.isnan(solution.objective_value):
+        return False
 
-    if np.isnan(solution.objective_value): return False
+    if abs(solution.objective_value) < tol:
+        return False
 
-    if abs(solution.objective_value) < tol: return False
-
-    if solution.status != 'optimal': return False
+    if solution.status != 'optimal':
+        return False
 
     return True
 
 
 def evalSlimSol(solution, tol=1E-08):
-    if np.isnan(solution): return False
+    if np.isnan(solution):
+        return False
 
-    if abs(solution) < tol: return False
+    if abs(solution) < tol:
+        return False
 
     return True
 
 
-def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E-08):
-
+def singleReactionKO(model, reaction_id, objective_reaction, exchange_prefix=None, tol=1E-08):
     set_objective_function(model, reaction_id)
 
-    initial_sol = model.optimize(objective_sense=objective)
+    initial_sol = model.optimize(objective_sense=objective_reaction)
 
     if not evalSol(initial_sol, tol):
         raise ValueError("Objective value is zero. Model must have a valid solution objective value")
@@ -404,10 +410,9 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E
     with model as m:
         reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
 
-    # multiprocessing is somehow taking more than just using a single core
     solution = single_reaction_deletion(model, reaction_list=reac_list)
 
-    solution.index = map(lambda x: x.__str__().replace('frozenset({\'', '').replace('\'})', ''), solution.index)
+    solution.iloc[:, 0] = list(map(lambda x: list(x)[0], solution.iloc[:, 0]))
 
     solution.loc[:, 'growth'][np.isnan(solution.loc[:, 'growth'])] = float(0)
     solution.loc[:, 'growth'] = solution.loc[:, 'growth'].apply(lambda x: float(abs(x)))
@@ -418,16 +423,14 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E
         print(reaction_id, " failed", " since there is no KO available")
         print(reaction_id, " trying exchange reactions")
 
-        reactions_remove = []
-
-        reactions_remove.append(reaction_id)
+        reactions_remove = [reaction_id]
 
         with model as m:
             reac_list = [get_reaction(m, i.id) for i in m.reactions if i.id not in reactions_remove]
 
         solution = single_reaction_deletion(model, reaction_list=reac_list)
 
-        solution.index = map(lambda x: x.__str__().replace('frozenset({\'', '').replace('\'})', ''), solution.index)
+        solution.iloc[:, 0] = list(map(lambda x: list(x)[0], solution.iloc[:, 0]))
 
         solution.loc[:, 'growth'][np.isnan(solution.loc[:, 'growth'])] = float(0)
         solution.loc[:, 'growth'] = solution.loc[:, 'growth'].apply(lambda x: float(abs(x)))
@@ -435,10 +438,9 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E
         sr_lethal = solution[solution.loc[:, 'growth'] <= tol]
 
     if sr_lethal.shape[0] == 0:
-
         raise ValueError("{} failed since there is no KO available".format(reaction_id))
 
-    all_kos = list(sr_lethal.index)
+    all_kos = list(sr_lethal.iloc[:, 0])
     random.shuffle(all_kos)
 
     if len(all_kos) > 5:
@@ -459,7 +461,7 @@ def singleReactionKO(model, reaction_id, objective, exchange_prefix=None, tol=1E
 
             set_objective_function(m, reaction_id)
 
-            last_sol = m.optimize(objective_sense=objective)
+            last_sol = m.optimize(objective_sense=objective_reaction)
 
             if evalSol(last_sol, tol):
 

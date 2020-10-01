@@ -6,16 +6,28 @@ import functools
 
 class Node:
 
-    def __init__(self, metabolite_id=None, name=None, is_reactant=True):
-        self.id = metabolite_id
+    def __init__(self, identifier=None, name=None, compartment=None, is_reactant=True):
+        self.id = identifier
         self.name = name
+        self.compartment = compartment
+        self.is_reactant = is_reactant
         self.reactions_list = []
         self.other_reactions_list = []
         self.next = []
         self.previous = []
-        self.flux = None
+        self.analysis = None
         self.isLeaf = False
-        self.is_reactant = is_reactant
+
+    def get_hash(self, stringify=False):
+
+        role = 'product'
+        if self.is_reactant:
+            role = 'reactant'
+
+        if stringify:
+            return '_'.join((str(self.id), str(self.name), str(self.compartment), role))
+
+        return self.id, self.name, self.compartment, role
 
     def get_next(self):
         return self.next
@@ -24,38 +36,49 @@ class Node:
         return self.previous
 
     def has_next_nodes(self):
-        return self.get_next() == []
+        return len(self.get_next()) > 0
 
-    def has_next(self, id):
-
-        has = False
+    def has_next_by_hash(self, hash_tuple):
 
         next_nodes = self.get_next()
 
         for node in next_nodes:
 
-            if node.id == id:
-                return True, node
+            if node.get_hash() == hash_tuple:
+                return node
 
-        return has, None
+        return
+
+    def has_next(self, identifier):
+
+        next_nodes = self.get_next()
+
+        for node in next_nodes:
+
+            if node.id == identifier:
+                return node
+
+        return
 
     def has_next_by_name(self, name):
-
-        has = False
 
         next_nodes = self.get_next()
 
         for node in next_nodes:
 
             if node.name == name:
-                return True, node
+                return node
 
-        return has, None
+        return
 
 
 class NodeCache:
+    bioiso_instances = {}
 
-    node_registry = {}
+    @classmethod
+    def new_node_cache(cls, instance):
+        cls.bioiso_instances[instance] = {}
+        return cls.bioiso_instances
 
     def __init__(self, func):
         self.function = func
@@ -63,15 +86,25 @@ class NodeCache:
 
     def __call__(self, *args, **kwargs):
 
-        composed_id = self.create_composed_ids(self._name, args)
+        bioiso_instance = args[0]
 
-        if composed_id in self.node_registry:
-            return self.node_registry[composed_id]
+        if bioiso_instance not in self.bioiso_instances:
+            analysis = self.function(*args, **kwargs)
+            return analysis
 
         else:
-            analysis = self.function(*args, **kwargs)
-            self.node_registry[composed_id] = analysis
-            return analysis
+
+            composed_id = self.create_composed_ids(self._name, args[1:])
+
+            node_registry = self.bioiso_instances[bioiso_instance]
+
+            if composed_id in node_registry:
+                return node_registry[composed_id]
+
+            else:
+                analysis = self.function(*args, **kwargs)
+                node_registry[composed_id] = analysis
+                return analysis
 
     @staticmethod
     def create_composed_ids(name, args):
@@ -100,178 +133,61 @@ class NodeCache:
         return composed_id
 
 
-def evaluate_side(bool):
-    if bool:
+def evaluate_side(boolean):
+    if boolean:
         return 'Reactant'
     else:
         return 'Product'
 
 
-def searchSpaceSize(results):
+def searchSpaceSizeRecursive(metabolites, reactions, tree):
+
+    for key, values in tree.items():
+
+        metabolites.add(values['identifier'])
+
+        for reaction in values['reactions']:
+            reactions.add(reaction[0])
+
+        searchSpaceSizeRecursive(metabolites, reactions, values['next'])
+
+
+def searchSpaceSize(tree):
     # length of all next nodes and reactions but without repeat
 
-    global metabolitesCache, reactionsCache, totalCache
+    metabolites = set()
+    reactions = set()
 
-    totalCache = {reaction[0]: 1 for reaction in results['M_fictitious']['reactions']}
-    reactionsCache = {reaction[0]: 1 for reaction in results['M_fictitious']['reactions']}
-    metabolitesCache = {}
+    searchSpaceSizeRecursive(metabolites, reactions, tree)
 
-    if len(totalCache) == 0:
-        return 0, 0, 0, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-               totalCache, reactionsCache, metabolitesCache
-
-    def searchSpaceSizeRecursive(results):
-
-        global metabolitesCache, reactionsCache, totalCache
-
-        for key in results:
-
-            if key in metabolitesCache:
-                metabolitesCache[key] += 1
-                totalCache[key] += 1
-            else:
-                metabolitesCache[key] = 1
-                totalCache[key] = 1
-
-            for reaction in results[key]['reactions']:
-                if reaction[0] in reactionsCache:
-                    reactionsCache[reaction[0]] += 1
-                    totalCache[reaction[0]] += 1
-                else:
-                    reactionsCache[reaction[0]] = 1
-                    totalCache[reaction[0]] = 1
-
-            if len(results[key]['next']) != 0:
-                searchSpaceSizeRecursive(results[key]['next'])
-
-            else:
-                continue
-
-    new_results = results['M_fictitious']['next']
-
-    for key in new_results:
-
-        if key in metabolitesCache:
-            metabolitesCache[key] += 1
-            totalCache[key] += 1
-        else:
-            metabolitesCache[key] = 1
-            totalCache[key] = 1
-
-        for reaction in new_results[key]['reactions']:
-            if reaction[0] in reactionsCache:
-                reactionsCache[reaction[0]] += 1
-                totalCache[reaction[0]] += 1
-            else:
-                reactionsCache[reaction[0]] = 1
-                totalCache[reaction[0]] = 1
-
-        if len(new_results[key]['next']) != 0:
-            searchSpaceSizeRecursive(new_results[key]['next'])
-
-    totalTotal = 0
-    for i in totalCache.values():
-        totalTotal += i
-
-    reactionsTotal = 0
-    for i in reactionsCache.values():
-        reactionsTotal += i
-
-    metabolitesTotal = 0
-    for i in metabolitesCache.values():
-        metabolitesTotal += i
-
-    return totalTotal, reactionsTotal, metabolitesTotal, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-           totalCache, reactionsCache, metabolitesCache
+    return len(reactions)+1, len(metabolites)-1
 
 
-def bioisoSearchSpace(results):
-    # length of the inherent nodes to a metabolite (precursor or successor) having a false analysis
-    # but without the repeats
+def bioisosearchSpaceSizeRecursive(metabolites, reactions, tree):
 
-    global metabolitesCache, reactionsCache, totalCache
+    for key, values in tree.items():
 
-    totalCache = {reaction[0]: 1 for reaction in results['M_fictitious']['reactions']}
-    reactionsCache = {reaction[0]: 1 for reaction in results['M_fictitious']['reactions']}
-    metabolitesCache = {}
+        if not values['analysis']:
 
-    if len(totalCache) == 0:
-        return 0, 0, 0, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-               totalCache, reactionsCache, metabolitesCache
+            metabolites.add(values['identifier'])
 
-    def searchSpaceSizeRecursive(results):
+        for reaction in values['reactions']:
 
-        global metabolitesCache, reactionsCache, totalCache
+            if not reaction[1]:
+                reactions.add(reaction[0])
 
-        for key in results:
+        bioisosearchSpaceSizeRecursive(metabolites, reactions, values['next'])
 
-            if not results[key]['analysis']:
 
-                if key in metabolitesCache:
-                    metabolitesCache[key] += 1
-                    totalCache[key] += 1
-                else:
-                    metabolitesCache[key] = 1
-                    totalCache[key] = 1
+def bioisosearchSpaceSize(tree):
+    # length of all next nodes and reactions but without repeat
 
-                for reaction in results[key]['reactions']:
+    metabolites = set()
+    reactions = set()
 
-                    if not reaction[1]:
+    bioisosearchSpaceSizeRecursive(metabolites, reactions, tree)
 
-                        if reaction[0] in reactionsCache:
-                            reactionsCache[reaction[0]] += 1
-                            totalCache[reaction[0]] += 1
-                        else:
-                            reactionsCache[reaction[0]] = 1
-                            totalCache[reaction[0]] = 1
-
-                if len(results[key]['next']) != 0:
-                    searchSpaceSizeRecursive(results[key]['next'])
-
-                else:
-                    continue
-
-    new_results = results['M_fictitious']['next']
-
-    for key in new_results:
-
-        if not new_results[key]['analysis']:
-
-            if key in metabolitesCache:
-                metabolitesCache[key] += 1
-                totalCache[key] += 1
-            else:
-                metabolitesCache[key] = 1
-                totalCache[key] = 1
-
-            for reaction in new_results[key]['reactions']:
-
-                if not reaction[1]:
-
-                    if reaction[0] in reactionsCache:
-                        reactionsCache[reaction[0]] += 1
-                        totalCache[reaction[0]] += 1
-                    else:
-                        reactionsCache[reaction[0]] = 1
-                        totalCache[reaction[0]] = 1
-
-            if len(new_results[key]['next']) != 0:
-                searchSpaceSizeRecursive(new_results[key]['next'])
-
-    totalTotal = 0
-    for i in totalCache.values():
-        totalTotal += i
-
-    reactionsTotal = 0
-    for i in reactionsCache.values():
-        reactionsTotal += i
-
-    metabolitesTotal = 0
-    for i in metabolitesCache.values():
-        metabolitesTotal += i
-
-    return totalTotal, reactionsTotal, metabolitesTotal, len(totalCache), len(reactionsCache), len(metabolitesCache), \
-           totalCache, reactionsCache, metabolitesCache
+    return len(reactions), len(metabolites)
 
 
 def timeit(function):
@@ -291,7 +207,7 @@ def timeout(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
 
-        seconds_before_timeout = args[0].__timeout__
+        seconds_before_timeout = args[0].timeout
 
         if seconds_before_timeout:
 
@@ -301,17 +217,17 @@ def timeout(func):
             def newFunc():
                 try:
                     res[0] = func(*args, **kwargs)
-                except Exception as e:
-                    res[0] = e
+                except Exception as exc:
+                    res[0] = exc
 
             t = Thread(target=newFunc)
             t.daemon = True
             try:
                 t.start()
                 t.join(seconds_before_timeout)
-            except Exception as e:
+            except Exception as exc:
                 print('error starting thread')
-                raise e
+                raise exc
             ret = res[0]
             if isinstance(ret, BaseException):
                 raise ret

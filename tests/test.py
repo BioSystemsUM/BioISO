@@ -1,36 +1,58 @@
 import os
-from validation import biomass_model_processing
+import time
+from unittest import TestCase, TestLoader, TextTestRunner
+
+from tests.validation import biomass_model_processing
 from bioiso import BioISO
 from bioiso.wrappers.cobraWrapper import load, set_solver
 
-model_name = 'iDS372'
-model_path = os.getcwd() + '/models/' + model_name + '.xml'
-reaction_to_eval = 'Biomass_assembly_C3_cytop'
-objective = 'maximize'
-solver = 'cplex'
-level = 2
-fast = False
 
-model = load(model_path)
+class TestBioISO(TestCase):
 
-set_solver(model, solver)
+    def setUp(self):
+        self.startTime = time.time()
 
-growth, m = biomass_model_processing[model_name](model)
+        self.model_name = 'iDS372'
+        model_path = os.getcwd() + '/models/' + self.model_name + '.xml'
+        self.reaction_to_eval = 'Biomass_assembly_C3_cytop'
+        self.objective = 'maximize'
+        solver = 'cplex'
+        self.level = 2
+        self.fast = False
 
-presults = os.getcwd() + '/models/results/'
+        model = load(model_path)
 
-if not os.path.exists(presults):
-    os.mkdir(presults)
+        set_solver(model, solver)
 
-with open(presults + 'GrowthCompoundRates' + model_name + '.txt', "w") as file:
-    file.writelines('Growth: ' + str(growth) + '\n')
+        growth, self.m, reactions, metabolites = biomass_model_processing[self.model_name](model)
 
-# one Bioiso instance for each evaluation
-bio = BioISO(reaction_to_eval, model, objective)
-bio.run(level, fast)
+        self.presults = os.getcwd() + '/test_results/'
 
-# getting the results
-# res = bio.get_tree()
+        if not os.path.exists(self.presults):
+            os.mkdir(self.presults)
 
-# bio.write_results is the get_tree and writes the results
-bio.write_results(presults + 'BioISOResults' + model_name + reaction_to_eval + '.json')
+        with open(self.presults + 'GrowthCompoundRates' + self.model_name + '.txt', "w") as file:
+            file.writelines('Growth: ' + str(growth) + '\n')
+            file.writelines('Reactions: ' + str(reactions) + '\n')
+            file.writelines('Metabolites: ' + str(metabolites) + '\n')
+
+    def tearDown(self):
+        t = time.time() - self.startTime
+        print('%s: %.9f' % (self.id(), t))
+
+    def test_BioISO(self):
+        self.startTime = time.time()
+
+        # # one Bioiso instance for each evaluation
+        bio = BioISO(self.reaction_to_eval, self.m, self.objective)
+        bio.run(self.level, self.fast)
+
+        # # bio.write_results performs the get_tree and writes the results
+        bio.write_results(self.presults + 'BioISOResults' + self.model_name + self.reaction_to_eval + '.json')
+
+        assert bio.results['M_root_M_root_M_root_product']['analysis']
+
+
+if __name__ == '__main__':
+    suite = TestLoader().loadTestsFromTestCase(TestBioISO)
+    TextTestRunner(verbosity=0).run(suite)

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level2" level="2" version="1">
+  <model id="iJO1366">
+  <listOfCompartments>
+      <compartment id="c" name="Cytoplasm"/>
+      <compartment id="e" name="Extracellular"/>
+      <compartment id="p" name="Periplasm"/>
+  </listOfCompartments>
+    <listOfSpecies>
+          <species id="M_10fthf_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_2fe2s_c" stoichiometry="2.6e-005" compartment="c"/>
+          <species id="M_2ohph_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_4fe4s_c" stoichiometry="0.00026" compartment="c"/>
+          <species id="M_ala_DASH_L_c" stoichiometry="0.513689" compartment="c"/>
+          <species id="M_amet_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_arg_DASH_L_c" stoichiometry="0.295792" compartment="c"/>
+          <species id="M_asn_DASH_L_c" stoichiometry="0.241055" compartment="c"/>
+          <species id="M_asp_DASH_L_c" stoichiometry="0.241055" compartment="c"/>
+          <species id="M_atp_c" stoichiometry="54.124831" compartment="c"/>
+          <species id="M_bmocogdp_c" stoichiometry="0.000122" compartment="c"/>
+          <species id="M_btn_c" stoichiometry="2e-006" compartment="c"/>
+          <species id="M_ca2_c" stoichiometry="0.005205" compartment="c"/>
+          <species id="M_cl_c" stoichiometry="0.005205" compartment="c"/>
+          <species id="M_coa_c" stoichiometry="0.000576" compartment="c"/>
+          <species id="M_cobalt2_c" stoichiometry="2.5e-005" compartment="c"/>
+          <species id="M_ctp_c" stoichiometry="0.133508" compartment="c"/>
+          <species id="M_cu2_c" stoichiometry="0.000709" compartment="c"/>
+          <species id="M_cys_DASH_L_c" stoichiometry="0.09158" compartment="c"/>
+          <species id="M_datp_c" stoichiometry="0.026166" compartment="c"/>
+          <species id="M_dctp_c" stoichiometry="0.027017" compartment="c"/>
+          <species id="M_dgtp_c" stoichiometry="0.027017" compartment="c"/>
+          <species id="M_dttp_c" stoichiometry="0.026166" compartment="c"/>
+          <species id="M_fad_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_fe2_c" stoichiometry="0.006715" compartment="c"/>
+          <species id="M_fe3_c" stoichiometry="0.007808" compartment="c"/>
+          <species id="M_gln_DASH_L_c" stoichiometry="0.26316" compartment="c"/>
+          <species id="M_glu_DASH_L_c" stoichiometry="0.26316" compartment="c"/>
+          <species id="M_gly_c" stoichiometry="0.612638" compartment="c"/>
+          <species id="M_gtp_c" stoichiometry="0.215096" compartment="c"/>
+          <species id="M_h2o_c" stoichiometry="48.601527" compartment="c"/>
+          <species id="M_his_DASH_L_c" stoichiometry="0.094738" compartment="c"/>
+          <species id="M_ile_DASH_L_c" stoichiometry="0.290529" compartment="c"/>
+          <species id="M_k_c" stoichiometry="0.195193" compartment="c"/>
+          <species id="M_leu_DASH_L_c" stoichiometry="0.450531" compartment="c"/>
+          <species id="M_lys_DASH_L_c" stoichiometry="0.343161" compartment="c"/>
+          <species id="M_met_DASH_L_c" stoichiometry="0.153686" compartment="c"/>
+          <species id="M_mg2_c" stoichiometry="0.008675" compartment="c"/>
+          <species id="M_mlthf_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_mn2_c" stoichiometry="0.000691" compartment="c"/>
+          <species id="M_mobd_c" stoichiometry="7e-006" compartment="c"/>
+          <species id="M_nad_c" stoichiometry="0.001831" compartment="c"/>
+          <species id="M_nadp_c" stoichiometry="0.000447" compartment="c"/>
+          <species id="M_nh4_c" stoichiometry="0.013013" compartment="c"/>
+          <species id="M_ni2_c" stoichiometry="0.000323" compartment="c"/>
+          <species id="M_pe160_c" stoichiometry="0.017868" compartment="c"/>
+          <species id="M_pe161_c" stoichiometry="0.054154" compartment="c"/>
+          <species id="M_phe_DASH_L_c" stoichiometry="0.185265" compartment="c"/>
+          <species id="M_pheme_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_pro_DASH_L_c" stoichiometry="0.221055" compartment="c"/>
+          <species id="M_pydx5p_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_ribflv_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_ser_DASH_L_c" stoichiometry="0.215792" compartment="c"/>
+          <species id="M_sheme_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_so4_c" stoichiometry="0.004338" compartment="c"/>
+          <species id="M_thf_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_thmpp_c" stoichiometry="0.000223" compartment="c"/>
+          <species id="M_thr_DASH_L_c" stoichiometry="0.253687" compartment="c"/>
+          <species id="M_trp_DASH_L_c" stoichiometry="0.056843" compartment="c"/>
+          <species id="M_tyr_DASH_L_c" stoichiometry="0.137896" compartment="c"/>
+          <species id="M_udcpdp_c" stoichiometry="5.5e-005" compartment="c"/>
+          <species id="M_utp_c" stoichiometry="0.144104" compartment="c"/>
+          <species id="M_val_DASH_L_c" stoichiometry="0.423162" compartment="c"/>
+          <species id="M_zn2_c" stoichiometry="0.000341" compartment="c"/>
+          <species id="M_kdo2lipid4_e" stoichiometry="0.019456" compartment="e"/>
+          <species id="M_murein5px4p_p" stoichiometry="0.013894" compartment="p"/>
+          <species id="M_pe160_p" stoichiometry="0.045946" compartment="p"/>
+          <species id="M_pe161_p" stoichiometry="0.02106" compartment="p"/>
+          <species id="M_adp_c" stoichiometry="53.95" compartment="c"/>
+          <species id="M_h_c" stoichiometry="53.95" compartment="c"/>
+          <species id="M_pi_c" stoichiometry="53.945662" compartment="c"/>
+          <species id="M_ppi_c" stoichiometry="0.773903" compartment="c"/>
+    </listOfSpecies>
+  </model>
+</sbml>

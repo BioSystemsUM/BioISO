@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level2" level="2" version="1">
+<model id="model_spneumoniaeR6">
+  <listOfCompartments>
+    <compartment id="C_00001"/>
+    <compartment id="C_00002"/>
+  </listOfCompartments>
+  <listOfSpecies>
+  <species compartment="C_00001" id="M_C00033_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00147_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00186_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00078_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00255_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00047_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C01330_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00011_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00064_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00080_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00469_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00116_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00124_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00009_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C01613_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00294_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00041_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00378_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00025_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00262_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00123_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00750_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00134_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00079_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00188_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00243_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00148_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00385_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00504_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00492_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00027_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C01762_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00315_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00049_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00062_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00120_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00065_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00073_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C02291_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00183_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00022_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00058_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00122_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00266_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00061_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00153_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00159_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00106_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00267_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00014_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00059_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00114_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00152_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00097_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00089_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00001_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00387_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00037_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00864_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00082_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00140_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00042_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00407_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00253_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00135_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00392_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00242_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00288_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00250_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_Biomass_extr">
+	  </species>
+      <species compartment="C_00001" id="M_C14818_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00007_extr">
+        
+            </species>
+      <species compartment="C_00001" id="M_C00212_extr">
+        
+            </species>
+    </listOfSpecies>
+  </model>
+</sbml>

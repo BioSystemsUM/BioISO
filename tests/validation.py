@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import warnings
@@ -5,7 +6,7 @@ import warnings
 import pandas as pd
 
 from bioiso import BioISO
-from bioiso.utils.bioisoUtils import searchSpaceSize, bioisoSearchSpace
+from bioiso.utils.bioisoUtils import searchSpaceSize, bioisosearchSpaceSize
 from bioiso.wrappers.cobraWrapper import load, set_solver, set_objective_function, get_reaction, singleReactionKO
 
 warnings.filterwarnings("ignore")
@@ -16,7 +17,10 @@ def iDS372(model):
 
     growth = model.optimize().objective_value
 
-    return ('Biomass_assembly_C3_cytop', growth), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('Biomass_assembly_C3_cytop', growth), model, reactions, metabolites
 
 
 def iJO1366(model):
@@ -26,7 +30,10 @@ def iJO1366(model):
 
     growth = model.optimize().objective_value
 
-    return ('Ec_biomass_iJO1366_core_53p95M', growth), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('Ec_biomass_iJO1366_core_53p95M', growth), model, reactions, metabolites
 
 
 def iBsu1103(model):
@@ -37,7 +44,10 @@ def iBsu1103(model):
 
     growth = model.optimize().objective_value
 
-    return ('bio00006', growth), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('bio00006', growth), model, reactions, metabolites
 
 
 def iTO977(model):
@@ -47,7 +57,10 @@ def iTO977(model):
 
     growth = model.optimize().objective_value
 
-    return ('CBIOMASS', growth), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('CBIOMASS', growth), model, reactions, metabolites
 
 
 def iOD907(model):
@@ -57,7 +70,10 @@ def iOD907(model):
 
     growth = model.optimize().objective_value
 
-    return ('Biomass_cyto', growth), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('Biomass_cyto', growth), model, reactions, metabolites
 
 
 def iDS372_compound(model):
@@ -65,7 +81,10 @@ def iDS372_compound(model):
 
     lactate_rate = model.optimize().objective_value
 
-    return ('EX_C00186_extr', lactate_rate), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('EX_C00186_extr', lactate_rate), model, reactions, metabolites
 
 
 def iJO1366_compound(model):
@@ -75,7 +94,10 @@ def iJO1366_compound(model):
 
     acetate_rate = model.optimize().objective_value
 
-    return ('EX_ac_LPAREN_e_RPAREN_', acetate_rate), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('EX_ac_LPAREN_e_RPAREN_', acetate_rate), model, reactions, metabolites
 
 
 def iBsu1103_compound(model):
@@ -89,7 +111,10 @@ def iBsu1103_compound(model):
 
     acetate_rate = model.optimize().objective_value
 
-    return ('EX_cpd00029_e', acetate_rate), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('EX_cpd00029_e', acetate_rate), model, reactions, metabolites
 
 
 def iTO977_compound(model):
@@ -99,7 +124,10 @@ def iTO977_compound(model):
 
     co2_rate = model.optimize().objective_value
 
-    return ('CO2xtO', co2_rate), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('CO2xtO', co2_rate), model, reactions, metabolites
 
 
 def iOD907_compound(model):
@@ -114,7 +142,10 @@ def iOD907_compound(model):
 
     citrate_rate = model.optimize().objective_value
 
-    return ('EX_C00158_extr', citrate_rate), model
+    reactions = len(model.reactions)
+    metabolites = len(model.metabolites)
+
+    return ('EX_C00158_extr', citrate_rate), model, reactions, metabolites
 
 
 biomass_model_processing = {'iDS372': iDS372,
@@ -130,8 +161,7 @@ compound_model_processing = {'iDS372': iDS372_compound,
                              'iOD907': iOD907_compound}
 
 
-def read_and_processing_models(path, solver, biomass=True):
-
+def read_and_processing_models(path, solver, reactions, biomass=True):
     print("Reading and processing models")
 
     models = {}
@@ -143,34 +173,39 @@ def read_and_processing_models(path, solver, biomass=True):
     else:
         path = os.getcwd() + '/models/'
 
-    for model_name in os.listdir(path):
+    for model_f_name in os.listdir(path):
 
-        if model_name == 'results':
-            continue
+        model_name = model_f_name[:-4]
 
-        print("Reading {} model".format(model_name))
+        if model_name in reactions:
 
-        model = load(path + model_name)
+            print("Reading {} model".format(model_f_name))
 
-        set_solver(model, solver)
+            model = load(path + model_f_name)
 
-        p = os.getcwd() + '/results/GrowthCompoundRates' + model_name[:-4] + '.txt'
+            set_solver(model, solver)
 
-        if biomass:
+            p = os.getcwd() + '/validation_results/GrowthCompoundRates' + model_name + '.txt'
 
-            rate, m = biomass_model_processing[model_name[:-4]](model)
+            if biomass:
 
-            with open(p, "a") as file:
-                file.writelines('Growth Rate: ' + str(rate) + '\n')
+                rate, m, n_reactions, n_metabolites = biomass_model_processing[model_name](model)
 
-        else:
+                with open(p, "a") as file:
+                    file.writelines('Growth Rate: ' + str(rate) + '\n')
+                    file.writelines('Reactions: ' + str(n_reactions) + '\n')
+                    file.writelines('Metabolites: ' + str(n_metabolites) + '\n')
 
-            rate, m = compound_model_processing[model_name[:-4]](model)
+            else:
 
-            with open(p, "a") as file:
-                file.writelines('Compound Rate: ' + str(rate) + '\n')
+                rate, m, n_reactions, n_metabolites = compound_model_processing[model_name](model)
 
-        models[model_name[:-4]] = m
+                with open(p, "a") as file:
+                    file.writelines('Compound Rate: ' + str(rate) + '\n')
+                    file.writelines('Reactions: ' + str(n_reactions) + '\n')
+                    file.writelines('Metabolites: ' + str(n_metabolites) + '\n')
+
+            models[model_name] = m
 
     print("Models are ready")
 
@@ -178,7 +213,6 @@ def read_and_processing_models(path, solver, biomass=True):
 
 
 def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', level=2, fast=False):
-
     if not isinstance(reactions, dict):
         raise TypeError("reactions arg must be an {}".format(dict.__name__))
 
@@ -188,19 +222,19 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
     if not isinstance(level, int):
         raise TypeError("level arg must be an {}".format(int.__name__))
 
-    models = read_and_processing_models(models_path, solver, biomass=biomass)
+    results_path = os.path.join(os.getcwd(), 'validation_results')
+
+    if not os.path.exists(results_path):
+        os.mkdir(results_path)
+
+    models = read_and_processing_models(models_path, solver, reactions, biomass=biomass)
 
     if len(models) != len(reactions) or len(models) != len(objectives) or len(reactions) != len(objectives):
-        raise ValueError("models, reactions and objectives args must have the same lenght. "
+        raise ValueError("models, reactions and objectives args must have the same length. "
                          "Current dimensions: "
                          "models - {} "
                          "reactions - {} "
                          "objectives - {}".format(str(len(models)), str(len(reactions)), str(len(objectives))))
-
-    results_path = os.path.join(models_path, 'results')
-
-    if not os.path.exists(results_path):
-        os.mkdir(results_path)
 
     models_kos = {}
 
@@ -239,7 +273,6 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
         results[modelKey] = {}
 
         for ko in models_kos[modelKey]:
-
             print("Starting BioISO with model {}, "
                   "reaction {} "
                   "and objective {} "
@@ -250,7 +283,6 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
             t0 = time.time()
 
             with models[modelKey] as m:
-
                 m.reactions.get_by_id(ko).bounds = (0.0, 0.0)
 
                 bio = BioISO(reactions[modelKey], m, objectives[modelKey])
@@ -263,7 +295,7 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
                 trees[modelKey][ko] = tree
 
                 f_name = results_path + '\{}_{}_{}_{}.json'.format(modelKey, ko, reactions[modelKey],
-                                                                  objectives[modelKey])
+                                                                   objectives[modelKey])
 
                 bio.write_results(f_name)
 
@@ -278,24 +310,22 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
     for modelKey in trees:
 
         for ko in trees[modelKey]:
+            total_reactions, total_metabolites = searchSpaceSize(trees[modelKey][ko])
+            bioiso_reactions, bioiso_metabolites = bioisosearchSpaceSize(trees[modelKey][ko])
 
-            searchspacesize = searchSpaceSize(trees[modelKey][ko])
-            bioisosearchspacesize = bioisoSearchSpace(trees[modelKey][ko])
+            results_fname = results_path + '\{}_{}_{}_{}_search_space.json'.format(modelKey,
+                                                                                   ko,
+                                                                                   reactions[modelKey],
+                                                                                   objectives[modelKey])
+
+            with open(results_fname, "w") as jsonfile:
+                json.dump(trees[modelKey][ko], jsonfile)
 
             results[modelKey][ko].update({
-                'total': searchspacesize[0],
-                'total_reactions': searchspacesize[1],
-                'total_metabolites': searchspacesize[2],
-                'unique': searchspacesize[3],
-                'unique_reactions': searchspacesize[4],
-                'unique_metabolites': searchspacesize[5],
-
-                'bioiso_total': bioisosearchspacesize[0],
-                'bioiso_total_reactions': bioisosearchspacesize[1],
-                'bioiso_total_metabolites': bioisosearchspacesize[2],
-                'bioiso_unique': bioisosearchspacesize[3],
-                'bioiso_unique_reactions': bioisosearchspacesize[4],
-                'bioiso_unique_metabolites': bioisosearchspacesize[5],
+                'total reactions': total_reactions,
+                'total metabolites': total_metabolites,
+                'bioiso reactions': bioiso_reactions,
+                'bioiso metabolites': bioiso_metabolites,
             })
 
     print()
@@ -310,7 +340,6 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
     with pd.ExcelWriter(f_name) as writer:
 
         for modelKey in results:
-
             rows = list(results[modelKey].keys())
             cols = list(results[modelKey][rows[0]].keys())
             data = [[metric for metric in results[modelKey][ko].values()] for ko in results[modelKey]]
@@ -319,14 +348,16 @@ def pipeline(models_path, reactions, objectives, biomass=True, solver='cplex', l
             df.to_excel(writer, sheet_name=modelKey)
             dfs.append(df)
 
+    print()
+    print('Ready ...')
+
     return dfs, results, trees
 
 
 if __name__ == "__main__":
-
     models_path = os.getcwd()
 
-    models_path = os.path.join(models_path, ('models'))
+    models_path = os.path.join(models_path, 'models')
 
     solver = 'cplex'
     level = 2
@@ -337,7 +368,7 @@ if __name__ == "__main__":
         'iJO1366': 'Ec_biomass_iJO1366_core_53p95M',
         'iOD907': 'Biomass_cyto',
         'iTO977': 'CBIOMASS',
-        'iBsu1103': 'bio00006'
+        'iBsu1103': 'bio00006',
     }
 
     biomass_objectives = {
@@ -345,7 +376,7 @@ if __name__ == "__main__":
         'iJO1366': 'maximize',
         'iOD907': 'maximize',
         'iTO977': 'maximize',
-        'iBsu1103': 'maximize'
+        'iBsu1103': 'maximize',
     }
 
     compounds_reactions = {
@@ -353,7 +384,7 @@ if __name__ == "__main__":
         'iJO1366': 'ACKr',
         'iOD907': 'R00351_C3_cyto',
         'iTO977': 'PDA1_2',
-        'iBsu1103': 'rxn00227'
+        'iBsu1103': 'rxn00227',
     }
 
     compounds_objectives = {
@@ -361,10 +392,11 @@ if __name__ == "__main__":
         'iJO1366': 'minimize',
         'iOD907': 'maximize',
         'iTO977': 'maximize',
-        'iBsu1103': 'maximize'
+        'iBsu1103': 'maximize',
     }
 
-    bio_df = pipeline(models_path, biomass_reactions, biomass_objectives, biomass=True, solver='cplex', level=2, fast=False)
+    bio_df = pipeline(models_path, biomass_reactions, biomass_objectives, biomass=True, solver='cplex', level=level,
+                      fast=fast)
 
-    compounds_df = pipeline(models_path, compounds_reactions, compounds_objectives, biomass=False, solver='cplex', level=2,
-                            fast=False)
+    compounds_df = pipeline(models_path, compounds_reactions, compounds_objectives, biomass=False, solver='cplex',
+                            level=level, fast=fast)
