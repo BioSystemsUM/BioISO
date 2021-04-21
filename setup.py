@@ -15,7 +15,7 @@ setup(
     license = 'GNU General Public License v3.0',
     keywords = 'metabolic model reconstruction and analysis',
     url = 'https://github.com/BioSystemsUM/bioiso',
-    long_description = open('README.rst').read(),
+    long_description = open('README.md').read(),
     classifiers = [
         'Development Status :: 1 - Beta',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
