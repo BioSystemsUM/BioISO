@@ -3,3 +3,6 @@
 /src/bioiso/wrappers/__pycache__/
 /src/bioiso/core/__pycache__/
 /src/bioiso/utils/__pycache__/
+__pycache__
+tests/test_results/*
+!tests/test_results/.gitkeep
