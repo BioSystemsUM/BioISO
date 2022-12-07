@@ -4,7 +4,7 @@ from unittest import TestCase, TestLoader, TextTestRunner
 
 from tests.validation import biomass_model_processing
 from bioiso import BioISO
-from bioiso.wrappers.cobraWrapper import load, set_solver
+from bioiso import load, set_solver
 
 
 class TestBioISO(TestCase):

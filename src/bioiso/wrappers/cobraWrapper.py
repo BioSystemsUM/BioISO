@@ -1,6 +1,6 @@
 from cobra import io, Reaction
 from cobra.flux_analysis import single_reaction_deletion
-from bioiso.utils.bioisoUtils import NodeCache
+from bioiso import NodeCache
 import numpy as np
 import random
 

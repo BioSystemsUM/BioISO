@@ -6,8 +6,8 @@ import warnings
 import pandas as pd
 
 from bioiso import BioISO
-from bioiso.utils.bioisoUtils import searchSpaceSize, bioisosearchSpaceSize
-from bioiso.wrappers.cobraWrapper import load, set_solver, set_objective_function, get_reaction, singleReactionKO
+from bioiso import searchSpaceSize, bioisosearchSpaceSize
+from bioiso import load, set_solver, set_objective_function, get_reaction, singleReactionKO
 
 warnings.filterwarnings("ignore")
 

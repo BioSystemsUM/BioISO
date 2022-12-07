@@ -1,4 +1,5 @@
 /.idea
-/bioiso/__pycache__/
-/bioiso/wrappers/__pycache__/
-/bioiso/core/__pycache__/
+/src/bioiso/__pycache__/
+/src/bioiso/wrappers/__pycache__/
+/src/bioiso/core/__pycache__/
+/src/bioiso/utils/__pycache__/
